@@ -4,7 +4,6 @@ Custom exceptions for Bug Bounty Automation Platform.
 
 from typing import Optional, Dict, Any
 from fastapi import HTTPException, status
-from django.core.exceptions import ValidationError
 import logging
 
 logger = logging.getLogger(__name__)

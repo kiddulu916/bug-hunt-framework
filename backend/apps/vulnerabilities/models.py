@@ -325,8 +325,6 @@ class ExploitationChain(models.Model):
     # Metadata
     executed_at = models.DateTimeField(auto_now_add=True)
 
-    """Meta class for ExploitationChain"""
-
     class Meta:
         db_table = 'exploitation_chains'
         ordering = ['vulnerability', 'step_number']
@@ -336,7 +334,9 @@ class ExploitationChain(models.Model):
         ]
 
     def __str__(self):
-        return f"{self.chain_name} - Step {self.step_number}/{self.total_steps}"
+        return (
+            f"{self.chain_name} - Step {self.step_number}/{self.total_steps}"
+        )
 
     @property
     def is_final_step(self):

@@ -10,16 +10,14 @@ import os
 import time
 import threading
 from typing import Dict, List, Any, Optional, Callable
-from datetime import datetime, timedelta
+from datetime import datetime
 from enum import Enum
 from dataclasses import dataclass, field
 from concurrent.futures import ThreadPoolExecutor, as_completed
 
-from django.utils import timezone
 from django.conf import settings
 
-from .base import BaseTool, ToolConfig, ToolResult, ToolStatus, ToolCategory, get_tool
-from apps.scanning.models import ScanSession, ToolExecution, ScanStatus
+from .base import ToolConfig, ToolResult, ToolStatus, get_tool
 from apps.targets.models import Target
 
 logger = logging.getLogger(__name__)
@@ -106,7 +104,9 @@ class ToolOrchestrator:
 
         return steps
 
-    def create_active_recon_plan(self, target: Target, discovered_assets: List[str]) -> List[ToolStep]:
+    def create_active_recon_plan(
+        self, target: Target, discovered_assets: List[str]
+    ) -> List[ToolStep]:
         """Create tool steps for active reconnaissance phase"""
         steps = []
 
@@ -139,7 +139,9 @@ class ToolOrchestrator:
 
         return steps
 
-    def create_vulnerability_testing_plan(self, target: Target, web_services: List[str]) -> List[ToolStep]:
+    def create_vulnerability_testing_plan(
+        self, target: Target, web_services: List[str]
+    ) -> List[ToolStep]:
         """Create tool steps for vulnerability testing phase"""
         steps = []
 
@@ -207,9 +209,14 @@ class ToolOrchestrator:
             execution_summary['errors'].append(str(e))
 
         execution_summary['end_time'] = datetime.now()
-        execution_summary['duration'] = (execution_summary['end_time'] - start_time).total_seconds()
+        execution_summary['duration'] = (
+            execution_summary['end_time'] - start_time
+        ).total_seconds()
 
-        self.logger.info("Orchestration completed: {execution_summary['completed_steps']}/%s steps", execution_summary['total_steps'])
+        self.logger.info(
+            "Orchestration completed: {execution_summary['completed_steps']}/%s steps",
+            execution_summary['total_steps']
+        )
 
         return execution_summary
 

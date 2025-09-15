@@ -322,7 +322,10 @@ HEALTH_CHECK = {
 # API Documentation
 SPECTACULAR_SETTINGS = {
     'TITLE': 'Bug Bounty Automation Platform API',
-    'DESCRIPTION': 'Comprehensive API for automated penetration testing and vulnerability management',
+    'DESCRIPTION': (
+        'Comprehensive API for automated penetration testing and '
+        'vulnerability management'
+    ),
     'VERSION': '1.0.0',
     'SERVE_INCLUDE_SCHEMA': False,
     'COMPONENT_SPLIT_REQUEST': True,
@@ -331,7 +334,9 @@ SPECTACULAR_SETTINGS = {
         'persistAuthorization': True,
         'displayRequestDuration': True,
     },
-    'PREPROCESSING_HOOKS': ['drf_spectacular.hooks.preprocess_exclude_path_format'],
+    'PREPROCESSING_HOOKS': [
+        'drf_spectacular.hooks.preprocess_exclude_path_format'
+    ],
     'SCHEMA_PATH_PREFIX': '/api/',
 }
 

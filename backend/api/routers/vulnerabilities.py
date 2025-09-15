@@ -4,7 +4,16 @@ Handles CRUD operations and analysis for vulnerabilities.
 """
 
 from typing import List, Optional, Dict, Any
-from fastapi import APIRouter, Depends, HTTPException, status, Query, Path, File, UploadFile
+from fastapi import (
+    APIRouter,
+    Depends,
+    HTTPException,
+    status,
+    Query,
+    Path,
+    File,
+    UploadFile,
+)
 from fastapi.responses import JSONResponse, FileResponse
 from sqlalchemy.orm import Session
 from sqlalchemy import and_, or_, desc, asc
@@ -22,7 +31,7 @@ from api.schemas.vulnerability import (
     BulkVulnerabilityOperation,
     VulnerabilityExport,
     VulnerabilityFilter,
-    VulnerabilityQueryFilters
+    VulnerabilityQueryFilters,
 )
 from apps.vulnerabilities.models import Vulnerability, VulnSeverity, ExploitationChain
 from core.pagination import VulnerabilityFastAPIPagination
@@ -41,11 +50,12 @@ vulnerability_analyzer = VulnerabilityAnalyzer()
 cvss_calculator = CVSSCalculator()
 evidence_handler = EvidenceHandler()
 
+
 @router.get("/", response_model=VulnerabilityListResponse)
 async def list_vulnerabilities(
     filters: VulnerabilityQueryFilters = Depends(),
     db: Session = Depends(get_db),
-    current_user: dict = Depends(get_current_user)
+    current_user: dict = Depends(get_current_user),
 ):
     """
     Get list of vulnerabilities with filtering, searching, and pagination.
@@ -60,10 +70,14 @@ async def list_vulnerabilities(
                 severity_enum = VulnSeverity(filters.severity.lower())
                 query = query.filter(Vulnerability.severity == severity_enum)
             except ValueError:
-                raise InvalidDataException("severity", filters.severity, "Invalid severity value")
+                raise InvalidDataException(
+                    "severity", filters.severity, "Invalid severity value"
+                )
 
         if filters.vulnerability_type:
-            query = query.filter(Vulnerability.vulnerability_type == filters.vulnerability_type)
+            query = query.filter(
+                Vulnerability.vulnerability_type == filters.vulnerability_type
+            )
 
         if filters.status:
             if filters.status == "verified":
@@ -77,18 +91,22 @@ async def list_vulnerabilities(
             )
 
         if filters.scan_session_id:
-            query = query.filter(Vulnerability.scan_session_id == filters.scan_session_id)
+            query = query.filter(
+                Vulnerability.scan_session_id == filters.scan_session_id
+            )
 
         if filters.search:
             search_filter = or_(
                 Vulnerability.vulnerability_name.ilike(f"%{filters.search}%"),
                 Vulnerability.impact_description.ilike(f"%{filters.search}%"),
-                Vulnerability.affected_url.ilike(f"%{filters.search}%")
+                Vulnerability.affected_url.ilike(f"%{filters.search}%"),
             )
             query = query.filter(search_filter)
 
         # Apply sorting
-        sort_field = getattr(Vulnerability, filters.sort_by, Vulnerability.discovered_at)
+        sort_field = getattr(
+            Vulnerability, filters.sort_by, Vulnerability.discovered_at
+        )
         if filters.sort_order == "desc":
             query = query.order_by(desc(sort_field))
         else:
@@ -99,24 +117,29 @@ async def list_vulnerabilities(
         result = pagination.paginate_vulnerabilities(query, filters.severity)
 
         return VulnerabilityListResponse(
-            vulnerabilities=[VulnerabilityResponse.from_orm(vuln) for vuln in result['items']],
-            pagination=result['pagination'],
-            severity_counts=result.get('severity_counts', {}),
-            applied_filters=result.get('applied_filters', {})
+            vulnerabilities=[
+                VulnerabilityResponse.from_orm(vuln) for vuln in result["items"]
+            ],
+            pagination=result["pagination"],
+            severity_counts=result.get("severity_counts", {}),
+            applied_filters=result.get("applied_filters", {}),
         )
 
     except Exception as e:
         logger.error("Error listing vulnerabilities: %s", e)
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail="Failed to retrieve vulnerabilities"
+            detail="Failed to retrieve vulnerabilities",
         )
 
-@router.post("/", response_model=VulnerabilityResponse, status_code=status.HTTP_201_CREATED)
+
+@router.post(
+    "/", response_model=VulnerabilityResponse, status_code=status.HTTP_201_CREATED
+)
 async def create_vulnerability(
     vulnerability_data: VulnerabilityCreate,
     db: Session = Depends(get_db),
-    current_user: dict = Depends(get_current_user)
+    current_user: dict = Depends(get_current_user),
 ):
     """
     Create a new vulnerability.
@@ -127,14 +150,13 @@ async def create_vulnerability(
             raise InvalidDataException(
                 "vulnerability_type",
                 vulnerability_data.vulnerability_type,
-                f"Must be one of: {', '.join(VULNERABILITY_TYPES)}"
+                f"Must be one of: {', '.join(VULNERABILITY_TYPES)}",
             )
 
         # Calculate CVSS score if not provided
         if not vulnerability_data.cvss_score and vulnerability_data.severity:
             vulnerability_data.cvss_score = cvss_calculator.calculate_base_score(
-                vulnerability_data.severity.value,
-                vulnerability_data.vulnerability_type
+                vulnerability_data.severity.value, vulnerability_data.vulnerability_type
             )
 
         # Create vulnerability instance
@@ -142,8 +164,8 @@ async def create_vulnerability(
 
         # Run initial analysis
         analysis = vulnerability_analyzer.analyze_vulnerability(db_vulnerability)
-        if analysis.get('confidence_adjustment'):
-            db_vulnerability.confidence_level = analysis['confidence_adjustment']
+        if analysis.get("confidence_adjustment"):
+            db_vulnerability.confidence_level = analysis["confidence_adjustment"]
 
         db.add(db_vulnerability)
         db.commit()
@@ -158,41 +180,43 @@ async def create_vulnerability(
         logger.error("Error creating vulnerability: %s", e)
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail="Failed to create vulnerability"
+            detail="Failed to create vulnerability",
         )
+
 
 @router.get("/{vulnerability_id}", response_model=VulnerabilityResponse)
 async def get_vulnerability(
     vulnerability_id: str = Path(..., description="Vulnerability ID"),
     db: Session = Depends(get_db),
-    current_user: dict = Depends(get_current_user)
+    current_user: dict = Depends(get_current_user),
 ):
     """
     Get a specific vulnerability by ID.
     """
-    vulnerability = db.query(Vulnerability).filter(
-        Vulnerability.id == vulnerability_id
-    ).first()
+    vulnerability = (
+        db.query(Vulnerability).filter(Vulnerability.id == vulnerability_id).first()
+    )
 
     if not vulnerability:
         raise RecordNotFoundException("Vulnerability", vulnerability_id)
 
     return VulnerabilityResponse.from_orm(vulnerability)
 
+
 @router.put("/{vulnerability_id}", response_model=VulnerabilityResponse)
 async def update_vulnerability(
     vulnerability_data: VulnerabilityUpdate,
     vulnerability_id: str = Path(..., description="Vulnerability ID"),
     db: Session = Depends(get_db),
-    current_user: dict = Depends(get_current_user)
+    current_user: dict = Depends(get_current_user),
 ):
     """
     Update an existing vulnerability.
     """
     try:
-        vulnerability = db.query(Vulnerability).filter(
-            Vulnerability.id == vulnerability_id
-        ).first()
+        vulnerability = (
+            db.query(Vulnerability).filter(Vulnerability.id == vulnerability_id).first()
+        )
 
         if not vulnerability:
             raise RecordNotFoundException("Vulnerability", vulnerability_id)
@@ -216,22 +240,25 @@ async def update_vulnerability(
         logger.error("Error updating vulnerability {vulnerability_id}: %s", e)
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail="Failed to update vulnerability"
+            detail="Failed to update vulnerability",
         )
+
 
 @router.delete("/{vulnerability_id}", status_code=status.HTTP_204_NO_CONTENT)
 async def delete_vulnerability(
     vulnerability_id: str = Path(..., description="Vulnerability ID"),
     db: Session = Depends(get_db),
-    current_user: dict = Depends(require_permissions(["admin", "delete_vulnerability"]))
+    current_user: dict = Depends(
+        require_permissions(["admin", "delete_vulnerability"])
+    ),
 ):
     """
     Delete a vulnerability (admin only).
     """
     try:
-        vulnerability = db.query(Vulnerability).filter(
-            Vulnerability.id == vulnerability_id
-        ).first()
+        vulnerability = (
+            db.query(Vulnerability).filter(Vulnerability.id == vulnerability_id).first()
+        )
 
         if not vulnerability:
             raise RecordNotFoundException("Vulnerability", vulnerability_id)
@@ -246,22 +273,23 @@ async def delete_vulnerability(
         logger.error("Error deleting vulnerability {vulnerability_id}: %s", e)
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail="Failed to delete vulnerability"
+            detail="Failed to delete vulnerability",
         )
+
 
 @router.post("/{vulnerability_id}/analyze", response_model=VulnerabilityAnalysis)
 async def analyze_vulnerability(
     vulnerability_id: str = Path(..., description="Vulnerability ID"),
     db: Session = Depends(get_db),
-    current_user: dict = Depends(get_current_user)
+    current_user: dict = Depends(get_current_user),
 ):
     """
     Perform detailed analysis on a vulnerability.
     """
     try:
-        vulnerability = db.query(Vulnerability).filter(
-            Vulnerability.id == vulnerability_id
-        ).first()
+        vulnerability = (
+            db.query(Vulnerability).filter(Vulnerability.id == vulnerability_id).first()
+        )
 
         if not vulnerability:
             raise RecordNotFoundException("Vulnerability", vulnerability_id)
@@ -275,23 +303,24 @@ async def analyze_vulnerability(
         logger.error("Error analyzing vulnerability {vulnerability_id}: %s", e)
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail="Failed to analyze vulnerability"
+            detail="Failed to analyze vulnerability",
         )
+
 
 @router.post("/{vulnerability_id}/verify")
 async def verify_vulnerability(
     vulnerability_id: str = Path(..., description="Vulnerability ID"),
     verification_notes: str = Query(..., description="Verification notes"),
     db: Session = Depends(get_db),
-    current_user: dict = Depends(require_permissions(["verify_vulnerability"]))
+    current_user: dict = Depends(require_permissions(["verify_vulnerability"])),
 ):
     """
     Manually verify a vulnerability.
     """
     try:
-        vulnerability = db.query(Vulnerability).filter(
-            Vulnerability.id == vulnerability_id
-        ).first()
+        vulnerability = (
+            db.query(Vulnerability).filter(Vulnerability.id == vulnerability_id).first()
+        )
 
         if not vulnerability:
             raise RecordNotFoundException("Vulnerability", vulnerability_id)
@@ -311,23 +340,24 @@ async def verify_vulnerability(
         logger.error("Error verifying vulnerability {vulnerability_id}: %s", e)
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail="Failed to verify vulnerability"
+            detail="Failed to verify vulnerability",
         )
+
 
 @router.post("/{vulnerability_id}/evidence")
 async def upload_evidence(
     vulnerability_id: str = Path(..., description="Vulnerability ID"),
     files: List[UploadFile] = File(..., description="Evidence files"),
     db: Session = Depends(get_db),
-    current_user: dict = Depends(get_current_user)
+    current_user: dict = Depends(get_current_user),
 ):
     """
     Upload evidence files for a vulnerability.
     """
     try:
-        vulnerability = db.query(Vulnerability).filter(
-            Vulnerability.id == vulnerability_id
-        ).first()
+        vulnerability = (
+            db.query(Vulnerability).filter(Vulnerability.id == vulnerability_id).first()
+        )
 
         if not vulnerability:
             raise RecordNotFoundException("Vulnerability", vulnerability_id)
@@ -351,44 +381,51 @@ async def upload_evidence(
         return {
             "message": "Evidence uploaded successfully",
             "files_uploaded": len(files),
-            "evidence_paths": evidence_paths
+            "evidence_paths": evidence_paths,
         }
 
     except Exception as e:
         db.rollback()
-        logger.error("Error uploading evidence for vulnerability {vulnerability_id}: %s", e)
+        logger.error(
+            "Error uploading evidence for vulnerability {vulnerability_id}: %s", e
+        )
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail="Failed to upload evidence"
+            detail="Failed to upload evidence",
         )
+
 
 @router.get("/{vulnerability_id}/exploitation-chains")
 async def get_exploitation_chains(
     vulnerability_id: str = Path(..., description="Vulnerability ID"),
     db: Session = Depends(get_db),
-    current_user: dict = Depends(get_current_user)
+    current_user: dict = Depends(get_current_user),
 ):
     """
     Get exploitation chains for a vulnerability.
     """
-    vulnerability = db.query(Vulnerability).filter(
-        Vulnerability.id == vulnerability_id
-    ).first()
+    vulnerability = (
+        db.query(Vulnerability).filter(Vulnerability.id == vulnerability_id).first()
+    )
 
     if not vulnerability:
         raise RecordNotFoundException("Vulnerability", vulnerability_id)
 
-    chains = db.query(ExploitationChain).filter(
-        ExploitationChain.vulnerability_id == vulnerability_id
-    ).order_by(ExploitationChain.step_number).all()
+    chains = (
+        db.query(ExploitationChain)
+        .filter(ExploitationChain.vulnerability_id == vulnerability_id)
+        .order_by(ExploitationChain.step_number)
+        .all()
+    )
 
     return {"exploitation_chains": chains}
+
 
 @router.post("/bulk-operations", response_model=Dict[str, Any])
 async def bulk_vulnerability_operations(
     operation: BulkVulnerabilityOperation,
     db: Session = Depends(get_db),
-    current_user: dict = Depends(require_permissions(["bulk_operations"]))
+    current_user: dict = Depends(require_permissions(["bulk_operations"])),
 ):
     """
     Perform bulk operations on multiple vulnerabilities.
@@ -403,7 +440,7 @@ async def bulk_vulnerability_operations(
         if len(vulnerabilities) != len(operation.vulnerability_ids):
             raise HTTPException(
                 status_code=status.HTTP_400_BAD_REQUEST,
-                detail="Some vulnerability IDs were not found"
+                detail="Some vulnerability IDs were not found",
             )
 
         results = {"processed": 0, "errors": []}
@@ -412,7 +449,9 @@ async def bulk_vulnerability_operations(
             for vuln in vulnerabilities:
                 try:
                     vuln.manually_verified = True
-                    vuln.verification_notes = operation.data.get("notes", "Bulk verified")
+                    vuln.verification_notes = operation.data.get(
+                        "notes", "Bulk verified"
+                    )
                     vuln.updated_at = datetime.utcnow()
                     results["processed"] += 1
                 except Exception as e:
@@ -438,7 +477,10 @@ async def bulk_vulnerability_operations(
 
         db.commit()
 
-        logger.info("Bulk operation {operation.operation} processed %s vulnerabilities", results['processed'])
+        logger.info(
+            "Bulk operation {operation.operation} processed %s vulnerabilities",
+            results["processed"],
+        )
 
         return results
 
@@ -447,16 +489,19 @@ async def bulk_vulnerability_operations(
         logger.error("Error in bulk vulnerability operation: %s", e)
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail="Failed to perform bulk operation"
+            detail="Failed to perform bulk operation",
         )
+
 
 @router.get("/export/{format}")
 async def export_vulnerabilities(
     format: str = Path(..., regex="^(csv|json|xml|pdf)$", description="Export format"),
     severity: Optional[str] = Query(None, description="Filter by severity"),
-    verified_only: bool = Query(False, description="Export only verified vulnerabilities"),
+    verified_only: bool = Query(
+        False, description="Export only verified vulnerabilities"
+    ),
     db: Session = Depends(get_db),
-    current_user: dict = Depends(get_current_user)
+    current_user: dict = Depends(get_current_user),
 ):
     """
     Export vulnerabilities in various formats.
@@ -476,17 +521,17 @@ async def export_vulnerabilities(
 
         # Generate export file
         from services.reporting_service import ReportingService
+
         reporting_service = ReportingService()
 
         export_data = VulnerabilityExport(
-            vulnerabilities=[VulnerabilityResponse.from_orm(v) for v in vulnerabilities],
+            vulnerabilities=[
+                VulnerabilityResponse.from_orm(v) for v in vulnerabilities
+            ],
             export_format=format,
-            filters={
-                "severity": severity,
-                "verified_only": verified_only
-            },
+            filters={"severity": severity, "verified_only": verified_only},
             generated_at=datetime.utcnow(),
-            generated_by=current_user.get("username", "unknown")
+            generated_by=current_user.get("username", "unknown"),
         )
 
         file_path = await reporting_service.export_vulnerabilities(export_data)
@@ -494,20 +539,20 @@ async def export_vulnerabilities(
         return FileResponse(
             path=file_path,
             filename=f"vulnerabilities_export_{datetime.utcnow().strftime('%Y%m%d_%H%M%S')}.{format}",
-            media_type=f"application/{format}"
+            media_type=f"application/{format}",
         )
 
     except Exception as e:
         logger.error("Error exporting vulnerabilities: %s", e)
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail="Failed to export vulnerabilities"
+            detail="Failed to export vulnerabilities",
         )
+
 
 @router.get("/statistics/summary")
 async def get_vulnerability_statistics(
-    db: Session = Depends(get_db),
-    current_user: dict = Depends(get_current_user)
+    db: Session = Depends(get_db), current_user: dict = Depends(get_current_user)
 ):
     """
     Get vulnerability statistics and summary.
@@ -519,36 +564,44 @@ async def get_vulnerability_statistics(
         total = db.query(func.count(Vulnerability.id)).scalar()
 
         # Severity breakdown
-        severity_stats = db.query(
-            Vulnerability.severity,
-            func.count(Vulnerability.id)
-        ).group_by(Vulnerability.severity).all()
+        severity_stats = (
+            db.query(Vulnerability.severity, func.count(Vulnerability.id))
+            .group_by(Vulnerability.severity)
+            .all()
+        )
 
         # Verification status
-        verified = db.query(func.count(Vulnerability.id)).filter(
-            Vulnerability.manually_verified == True
-        ).scalar()
+        verified = (
+            db.query(func.count(Vulnerability.id))
+            .filter(Vulnerability.manually_verified == True)
+            .scalar()
+        )
 
         # Top vulnerability types
-        type_stats = db.query(
-            Vulnerability.vulnerability_type,
-            func.count(Vulnerability.id)
-        ).group_by(Vulnerability.vulnerability_type).order_by(
-            func.count(Vulnerability.id).desc()
-        ).limit(10).all()
+        type_stats = (
+            db.query(Vulnerability.vulnerability_type, func.count(Vulnerability.id))
+            .group_by(Vulnerability.vulnerability_type)
+            .order_by(func.count(Vulnerability.id).desc())
+            .limit(10)
+            .all()
+        )
 
         # OWASP Top 10 distribution
-        owasp_stats = db.query(
-            Vulnerability.owasp_category,
-            func.count(Vulnerability.id)
-        ).group_by(Vulnerability.owasp_category).all()
+        owasp_stats = (
+            db.query(Vulnerability.owasp_category, func.count(Vulnerability.id))
+            .group_by(Vulnerability.owasp_category)
+            .all()
+        )
 
         # Recent discoveries (last 30 days)
         from datetime import timedelta
+
         thirty_days_ago = datetime.utcnow() - timedelta(days=30)
-        recent = db.query(func.count(Vulnerability.id)).filter(
-            Vulnerability.discovered_at >= thirty_days_ago
-        ).scalar()
+        recent = (
+            db.query(func.count(Vulnerability.id))
+            .filter(Vulnerability.discovered_at >= thirty_days_ago)
+            .scalar()
+        )
 
         return {
             "total_vulnerabilities": total,
@@ -563,21 +616,24 @@ async def get_vulnerability_statistics(
             ],
             "owasp_distribution": {
                 category: count for category, count in owasp_stats if category
-            }
+            },
         }
 
     except Exception as e:
         logger.error("Error getting vulnerability statistics: %s", e)
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail="Failed to get vulnerability statistics"
+            detail="Failed to get vulnerability statistics",
         )
+
 
 @router.get("/statistics/trends")
 async def get_vulnerability_trends(
-    days: int = Query(30, ge=7, le=365, description="Number of days for trend analysis"),
+    days: int = Query(
+        30, ge=7, le=365, description="Number of days for trend analysis"
+    ),
     db: Session = Depends(get_db),
-    current_user: dict = Depends(get_current_user)
+    current_user: dict = Depends(get_current_user),
 ):
     """
     Get vulnerability discovery trends over time.
@@ -590,46 +646,48 @@ async def get_vulnerability_trends(
         start_date = end_date - timedelta(days=days)
 
         # Daily vulnerability discoveries
-        daily_trends = db.query(
-            func.date(Vulnerability.discovered_at).label('date'),
-            func.count(Vulnerability.id).label('count')
-        ).filter(
-            Vulnerability.discovered_at >= start_date
-        ).group_by(
-            func.date(Vulnerability.discovered_at)
-        ).order_by('date').all()
+        daily_trends = (
+            db.query(
+                func.date(Vulnerability.discovered_at).label("date"),
+                func.count(Vulnerability.id).label("count"),
+            )
+            .filter(Vulnerability.discovered_at >= start_date)
+            .group_by(func.date(Vulnerability.discovered_at))
+            .order_by("date")
+            .all()
+        )
 
         # Severity trends
-        severity_trends = db.query(
-            func.date(Vulnerability.discovered_at).label('date'),
-            Vulnerability.severity,
-            func.count(Vulnerability.id).label('count')
-        ).filter(
-            Vulnerability.discovered_at >= start_date
-        ).group_by(
-            func.date(Vulnerability.discovered_at),
-            Vulnerability.severity
-        ).order_by('date').all()
+        severity_trends = (
+            db.query(
+                func.date(Vulnerability.discovered_at).label("date"),
+                Vulnerability.severity,
+                func.count(Vulnerability.id).label("count"),
+            )
+            .filter(Vulnerability.discovered_at >= start_date)
+            .group_by(func.date(Vulnerability.discovered_at), Vulnerability.severity)
+            .order_by("date")
+            .all()
+        )
 
         return {
             "period": {
                 "start_date": start_date.isoformat(),
                 "end_date": end_date.isoformat(),
-                "days": days
+                "days": days,
             },
             "daily_discoveries": [
-                {"date": str(date), "count": count}
-                for date, count in daily_trends
+                {"date": str(date), "count": count} for date, count in daily_trends
             ],
             "severity_trends": [
                 {"date": str(date), "severity": severity.value, "count": count}
                 for date, severity, count in severity_trends
-            ]
+            ],
         }
 
     except Exception as e:
         logger.error("Error getting vulnerability trends: %s", e)
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail="Failed to get vulnerability trends"
+            detail="Failed to get vulnerability trends",
         )

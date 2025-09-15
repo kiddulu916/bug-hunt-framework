@@ -8,7 +8,6 @@ Implements wrappers for port scanning tools like nmap, masscan, etc.
 import json
 import xml.etree.ElementTree as ET
 from typing import Dict, List, Any
-from pathlib import Path
 
 from ..base import BaseTool, ToolConfig, ToolCategory, register_tool
 
@@ -30,7 +29,10 @@ class NmapTool(BaseTool):
         ]
 
         # Default scan type
-        scan_type = config.custom_params.get("scan_type", "default") if config.custom_params else "default"
+        scan_type = (
+            config.custom_params.get("scan_type", "default") 
+            if config.custom_params else "default"
+        )
 
         if scan_type == "quick":
             command.extend(["-T4", "-F"])  # Fast scan, common ports only
@@ -44,15 +46,24 @@ class NmapTool(BaseTool):
             command.extend(["-T4", "--top-ports", "1000"])  # Default scan
 
         # Add service detection
-        if config.custom_params and config.custom_params.get("service_detection", True):
+        if (
+            config.custom_params and 
+            config.custom_params.get("service_detection", True)
+        ):
             command.append("-sV")
 
         # Add OS detection
-        if config.custom_params and config.custom_params.get("os_detection", False):
+        if (
+            config.custom_params and 
+            config.custom_params.get("os_detection", False)
+        ):
             command.append("-O")
 
         # Add script scanning
-        if config.custom_params and config.custom_params.get("scripts", False):
+        if (
+            config.custom_params and 
+            config.custom_params.get("scripts", False)
+        ):
             command.extend(["--script", "default,safe"])
 
         # Add timing if specified

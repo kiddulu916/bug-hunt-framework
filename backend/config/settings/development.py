@@ -3,7 +3,6 @@ Development settings for Bug Bounty Automation Platform.
 """
 
 from .base import *
-import os
 
 # Debug settings
 DEBUG = True

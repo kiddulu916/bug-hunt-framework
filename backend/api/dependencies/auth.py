@@ -86,7 +86,11 @@ async def get_current_user(
         # Log successful authentication
         log_security_event(
             "authentication_success",
-            {"user_id": user_id, "username": username, "ip": request.client.host}
+            {
+                "user_id": user_id,
+                "username": username,
+                "ip": request.client.host
+            }
         )
 
         return user_data
@@ -94,7 +98,11 @@ async def get_current_user(
     except JWTError as e:
         log_security_event(
             "authentication_failed",
-            {"reason": "invalid_token", "error": str(e), "ip": request.client.host}
+            {
+                "reason": "invalid_token",
+                "error": str(e),
+                "ip": request.client.host
+            }
         )
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
@@ -104,7 +112,11 @@ async def get_current_user(
     except (InvalidTokenException, TokenExpiredException) as e:
         log_security_event(
             "authentication_failed",
-            {"reason": "token_error", "error": str(e), "ip": request.client.host}
+            {
+                "reason": "token_error",
+                "error": str(e),
+                "ip": request.client.host
+            }
         )
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
@@ -150,12 +162,16 @@ async def get_current_active_user(
 
     return current_user
 
+
 class RequirePermissions:
     """
     Class-based dependency for checking user permissions.
     """
-
-    def __init__(self, required_permissions: List[str], require_all: bool = False):
+    def __init__(
+        self,
+        required_permissions: List[str],
+        require_all: bool = False
+    ):
         """
         Initialize permission checker.
 
@@ -204,7 +220,10 @@ class RequirePermissions:
                 )
                 raise HTTPException(
                     status_code=status.HTTP_403_FORBIDDEN,
-                    detail=f"Missing required permissions: {', '.join(missing_permissions)}"
+                    detail=(
+                        f"Missing required permissions: "
+                        f"{', '.join(missing_permissions)}"
+                    )
                 )
         else:
             # User needs at least one permission
@@ -222,10 +241,14 @@ class RequirePermissions:
                 )
                 raise HTTPException(
                     status_code=status.HTTP_403_FORBIDDEN,
-                    detail=f"Requires one of: {', '.join(self.required_permissions)}"
+                    detail=(
+                        f"Requires one of: "
+                        f"{', '.join(self.required_permissions)}"
+                    )
                 )
 
         return current_user
+
 
 class RequireRole:
     """
@@ -270,10 +293,14 @@ class RequireRole:
             )
             raise HTTPException(
                 status_code=status.HTTP_403_FORBIDDEN,
-                detail=f"Requires one of roles: {', '.join(self.required_roles)}"
+                detail=(
+                    f"Requires one of roles: "
+                    f"{', '.join(self.required_roles)}"
+                )
             )
 
         return current_user
+
 
 async def get_optional_user(
     request: Request,

@@ -17,19 +17,29 @@ def initialize_tools():
 
     try:
         # Import all tool modules to trigger registration
-        from .passive_recon import subdomain_enum
-        from .active_recon import port_scanning
-        from .vulnerability_testing import nuclei_scanner
+        # Note: These imports are intentional to register tools
+        from .passive_recon import osint_gathering  # noqa: F401
+        from .passive_recon import tech_fingerprinting  # noqa: F401
+        from .active_recon import service_detection  # noqa: F401
+        from .vulnerability_testing import sql_injection  # noqa: F401
+        from .vulnerability_testing import xss_testing  # noqa: F401
+        from .vulnerability_testing import file_inclusion  # noqa: F401
+        from .vulnerability_testing import auth_bypass  # noqa: F401
 
         logger.info("Tool modules imported successfully")
 
         # Log available tools
         available_tools = list_tools()
-        total_tools = sum(len(tools) for tools in available_tools.values())
 
-        logger.info("Registered {total_tools} tools across %s categories:", len(available_tools))
+        logger.info(
+            "Registered tools across %s categories:",
+            len(available_tools)
+        )
         for category, tools in available_tools.items():
-            logger.info("  {category}: %s", ', '.join(tools) if tools else 'none')
+            logger.info(
+                "  {category}: %s",
+                ', '.join(tools) if tools else 'none'
+            )
 
         return True
 

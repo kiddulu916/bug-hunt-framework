@@ -7,9 +7,8 @@ Common utilities for parsing tool outputs and extracting structured data
 
 import re
 import json
-import csv
 import xml.etree.ElementTree as ET
-from typing import Dict, List, Any, Optional, Union
+from typing import Dict, List, Any, Optional
 from pathlib import Path
 from urllib.parse import urlparse
 

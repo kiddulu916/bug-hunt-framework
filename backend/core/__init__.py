@@ -100,7 +100,9 @@ from .constants import (
 # Core metadata
 __version__ = "1.0.0"
 __title__ = "Bug Bounty Platform Core"
-__description__ = "Core functionality and utilities for the Bug Bounty Automation Platform"
+__description__ = (
+    "Core functionality and utilities for the Bug Bounty Automation Platform"
+)
 
 # Export all core components
 __all__ = [
@@ -220,7 +222,9 @@ __all__ = [
     "__description__",
 ]
 
+
 # Utility functions for core functionality
+
 
 def get_database_session():
     """
@@ -245,7 +249,11 @@ def validate_input(input_data, validator_type="general"):
     if validator_type == "email":
         return validator.validate_email(input_data)
     elif validator_type == "url":
-        return validator.validate_url(input_data) if security_manager.validate_url(input_data) else False
+        return (
+            validator.validate_url(input_data) 
+            if security_manager.validate_url(input_data) 
+            else False
+        )
     elif validator_type == "domain":
         return validator.validate_domain(input_data)
     elif validator_type == "ip":
@@ -280,11 +288,13 @@ def create_paginated_response(items, page, page_size, total_count):
         def limit(self, limit):
             return self
 
+
         def all(self):
             return items
 
     mock_query = MockQuery()
     return pagination.paginate_query(mock_query, total_count)
+
 
 def log_platform_event(event_type, message, details=None, level="info"):
     """
@@ -316,6 +326,7 @@ def log_platform_event(event_type, message, details=None, level="info"):
         logger.critical(f"{event_type}: {message}", extra=log_data)
     else:
         logger.info("{event_type}: %s", message, extra=log_data)
+
 
 # Add utility functions to exports
 __all__.extend([

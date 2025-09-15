@@ -15,7 +15,9 @@ TEMPLATE_DEBUG = False
 # Security headers
 SECURE_SSL_REDIRECT = env('SECURE_SSL_REDIRECT', default=True)
 SECURE_HSTS_SECONDS = env('SECURE_HSTS_SECONDS', default=31536000)
-SECURE_HSTS_INCLUDE_SUBDOMAINS = env('SECURE_HSTS_INCLUDE_SUBDOMAINS', default=True)
+SECURE_HSTS_INCLUDE_SUBDOMAINS = env(
+    'SECURE_HSTS_INCLUDE_SUBDOMAINS', default=True
+)
 SECURE_HSTS_PRELOAD = env('SECURE_HSTS_PRELOAD', default=True)
 SECURE_CONTENT_TYPE_NOSNIFF = True
 SECURE_BROWSER_XSS_FILTER = True
@@ -92,10 +94,15 @@ LOGGING = {
     'formatters': {
         'json': {
             '()': 'pythonjsonlogger.jsonlogger.JsonFormatter',
-            'format': '%(levelname)s %(asctime)s %(name)s %(process)d %(thread)d %(message)s'
+            'format': (
+                '%(levelname)s %(asctime)s %(name)s %(process)d '
+                '%(thread)d %(message)s'
+            )
         },
         'verbose': {
-            'format': '{levelname} {asctime} {name} {process:d} {thread:d} {message}',
+            'format': (
+                '{levelname} {asctime} {name} {process:d} {thread:d} {message}'
+            ),
             'style': '{',
         },
     },

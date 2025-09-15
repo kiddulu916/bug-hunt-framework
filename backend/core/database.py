@@ -43,6 +43,7 @@ SessionLocal = sessionmaker(
 # Base class for SQLAlchemy models
 Base = declarative_base()
 
+
 def get_db() -> Generator[Session, None, None]:
     """
     Dependency function to get database session for FastAPI.
@@ -57,6 +58,7 @@ def get_db() -> Generator[Session, None, None]:
         raise
     finally:
         db.close()
+
 
 @contextmanager
 def get_db_session():
@@ -78,6 +80,7 @@ def get_db_session():
         raise
     finally:
         db.close()
+
 
 class DatabaseManager:
     """Database manager for handling connections and transactions."""
@@ -118,6 +121,7 @@ class DatabaseManager:
             result = db.execute(sql, params or {})
             return result
 
+
 # Database event listeners
 @event.listens_for(engine, "connect")
 def set_sqlite_pragma(dbapi_connection, connection_record):
@@ -131,10 +135,12 @@ def set_sqlite_pragma(dbapi_connection, connection_record):
         cursor.execute("PRAGMA temp_store=memory")
         cursor.close()
 
+
 @event.listens_for(engine, "checkout")
 def receive_checkout(dbapi_connection, connection_record, connection_proxy):
     """Log database connection checkout."""
     logger.debug("Database connection checked out from pool")
+
 
 @event.listens_for(engine, "checkin")
 def receive_checkin(dbapi_connection, connection_record):
@@ -142,6 +148,8 @@ def receive_checkin(dbapi_connection, connection_record):
     logger.debug("Database connection returned to pool")
 
 # Health check function
+
+
 def check_database_health() -> bool:
     """
     Check database connectivity and health.
@@ -155,6 +163,7 @@ def check_database_health() -> bool:
         logger.error("Database health check failed: %s", e)
         return False
 
+
 # Database statistics
 def get_database_stats():
     """Get database connection pool statistics."""
@@ -165,6 +174,7 @@ def get_database_stats():
         'checked_out': pool.checkedout(),
         'overflow': pool.overflow(),
     }
+
 
 # Initialize database manager
 db_manager = DatabaseManager()

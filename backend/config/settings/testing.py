@@ -28,6 +28,8 @@ CACHES = {
 }
 
 # Disable migrations during testing for speed
+
+
 class DisableMigrations:
     def __contains__(self, item):
         return True
@@ -37,6 +39,7 @@ class DisableMigrations:
 
 MIGRATION_MODULES = DisableMigrations()
 
+
 # Password hashers optimized for testing speed
 PASSWORD_HASHERS = [
     'django.contrib.auth.hashers.MD5PasswordHasher',
@@ -44,6 +47,7 @@ PASSWORD_HASHERS = [
 
 # Disable logging during tests
 LOGGING_CONFIG = None
+
 import logging
 logging.disable(logging.CRITICAL)
 

@@ -21,6 +21,7 @@ def health_check(request):
         'version': '1.0.0'
     })
 
+
 def api_root(request):
     """API root endpoint with basic information"""
     return JsonResponse({
@@ -36,6 +37,7 @@ def api_root(request):
         }
     })
 
+
 # Main URL patterns
 urlpatterns = [
     # Health check
@@ -49,8 +51,16 @@ urlpatterns = [
 
     # API documentation
     path('api/schema/', SpectacularAPIView.as_view(), name='schema'),
-    path('api/docs/', SpectacularSwaggerView.as_view(url_name='schema'), name='swagger-ui'),
-    path('api/redoc/', SpectacularRedocView.as_view(url_name='schema'), name='redoc'),
+    path(
+        'api/docs/', 
+        SpectacularSwaggerView.as_view(url_name='schema'), 
+        name='swagger-ui'
+    ),
+    path(
+        'api/redoc/', 
+        SpectacularRedocView.as_view(url_name='schema'), 
+        name='redoc'
+    ),
 
     # API v1 endpoints
     path('api/v1/vulnerabilities/', include('apps.vulnerabilities.urls')),

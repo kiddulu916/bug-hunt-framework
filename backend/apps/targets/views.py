@@ -105,7 +105,9 @@ class TargetViewSet(viewsets.ModelViewSet):
 
         # Return full target data
         response_serializer = TargetSerializer(target)
-        return Response(response_serializer.data, status=status.HTTP_201_CREATED)
+        return Response(
+            response_serializer.data, status=status.HTTP_201_CREATED
+        )
 
     def update(self, request, *args, **kwargs):
         """Update target with change tracking"""
@@ -257,10 +259,12 @@ class TargetViewSet(viewsets.ModelViewSet):
         vulnerabilities = Vulnerability.objects.filter(
             scan_session__target=target
         )
-        stats['recent_activity']['total_vulnerabilities'] = vulnerabilities.count()
-        stats['recent_activity']['critical_vulnerabilities'] = vulnerabilities.filter(
-            severity='critical'
-        ).count()
+        stats['recent_activity']['total_vulnerabilities'] = (
+            vulnerabilities.count()
+        )
+        stats['recent_activity']['critical_vulnerabilities'] = (
+            vulnerabilities.filter(severity='critical').count()
+        )
 
         return Response(stats)
 
@@ -276,9 +280,9 @@ class TargetViewSet(viewsets.ModelViewSet):
             'recent_targets': queryset.order_by('-created_at')[:5].values(
                 'id', 'target_name', 'platform', 'created_at'
             ),
-            'most_scanned': queryset.order_by('-total_scan_sessions')[:5].values(
-                'id', 'target_name', 'total_scan_sessions'
-            )
+            'most_scanned': queryset.order_by(
+                '-total_scan_sessions'
+            )[:5].values('id', 'target_name', 'total_scan_sessions')
         }
 
         # Count by platform
@@ -297,7 +301,9 @@ class TargetViewSet(viewsets.ModelViewSet):
         target.save(update_fields=['is_active', 'updated_at'])
 
         return Response({
-            'message': f"Target {'activated' if target.is_active else 'deactivated'}",
+            'message': (
+                f"Target {'activated' if target.is_active else 'deactivated'}"
+            ),
             'is_active': target.is_active
         })
 
