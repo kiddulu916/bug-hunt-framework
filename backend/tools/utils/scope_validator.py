@@ -1,1 +1,1 @@
-
+# Scope validator utility

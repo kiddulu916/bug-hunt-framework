@@ -1,1 +1,1 @@
-
+# Scan workflow integration test

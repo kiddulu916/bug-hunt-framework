@@ -67,7 +67,10 @@ class NmapTool(BaseTool):
             command.extend(["--script", "default,safe"])
 
         # Add timing if specified
-        if config.custom_params and "timing" in config.custom_params:
+        if (
+            config.custom_params and 
+            "timing" in config.custom_params
+        ):
             command.extend(["-T", str(config.custom_params["timing"])])
 
         return command
