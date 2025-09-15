@@ -13,7 +13,7 @@ from core.constants import RECON_PHASES, TOOL_CONFIGS
 
 class ScanBase(BaseModel):
     """Base schema for scan session data."""
-    
+
     session_name: str = Field(..., min_length=3, max_length=255, description="Scan session name")
     scan_config: Dict[str, Any] = Field(default_factory=dict, description="Scan configuration parameters")
     methodology_phases: List[str] = Field(default_factory=lambda: RECON_PHASES, description="Methodology phases to execute")
@@ -23,19 +23,19 @@ class ScanBase(BaseModel):
         """Validate methodology phases against known phases."""
         if not v:
             return RECON_PHASES
-        
+
         valid_phases = set(RECON_PHASES)
         invalid_phases = [phase for phase in v if phase not in valid_phases]
-        
+
         if invalid_phases:
             raise ValueError(f'Invalid methodology phases: {", ".join(invalid_phases)}. '
                            f'Valid phases are: {", ".join(RECON_PHASES)}')
-        
+
         return v
 
 class ScanSessionCreate(ScanBase):
     """Schema for creating a new scan session."""
-    
+
     target_id: str = Field(..., description="Target ID to scan")
     priority: int = Field(5, ge=1, le=10, description="Scan priority (1=lowest, 10=highest)")
     max_duration_hours: Optional[int] = Field(None, ge=1, le=48, description="Maximum scan duration in hours")
@@ -53,12 +53,12 @@ class ScanSessionCreate(ScanBase):
     def validate_tools_config(cls, values):
         """Validate tool configurations."""
         tools_config = values.get('tools_config', {})
-        
+
         for tool_name, config in tools_config.items():
             if tool_name not in TOOL_CONFIGS:
                 raise ValueError(f'Unknown tool: {tool_name}. '
                                f'Valid tools are: {", ".join(TOOL_CONFIGS.keys())}')
-        
+
         return values
 
     class Config:
@@ -74,7 +74,7 @@ class ScanSessionCreate(ScanBase):
                 },
                 "methodology_phases": [
                     "passive_recon",
-                    "active_recon", 
+                    "active_recon",
                     "vulnerability_testing"
                 ],
                 "priority": 7,
@@ -93,7 +93,7 @@ class ScanSessionCreate(ScanBase):
 
 class ScanSessionUpdate(BaseModel):
     """Schema for updating scan session data."""
-    
+
     session_name: Optional[str] = Field(None, min_length=3, max_length=255)
     scan_config: Optional[Dict[str, Any]] = None
     methodology_phases: Optional[List[str]] = None
@@ -119,7 +119,7 @@ class ScanSessionUpdate(BaseModel):
 
 class ScanSessionResponse(ScanBase):
     """Schema for scan session response data."""
-    
+
     id: str = Field(..., description="Scan session ID")
     target_id: str = Field(..., description="Target ID")
     status: ScanStatus = Field(..., description="Current scan status")
@@ -132,7 +132,7 @@ class ScanSessionResponse(ScanBase):
     completed_at: Optional[datetime] = Field(None, description="Completion timestamp")
     estimated_completion: Optional[datetime] = Field(None, description="Estimated completion time")
     total_subdomains_found: int = Field(0, description="Total subdomains discovered")
-    total_endpoints_found: int = Field(0, description="Total endpoints discovered") 
+    total_endpoints_found: int = Field(0, description="Total endpoints discovered")
     total_vulnerabilities: int = Field(0, description="Total vulnerabilities found")
     critical_vulnerabilities: int = Field(0, description="Critical vulnerabilities found")
     high_vulnerabilities: int = Field(0, description="High severity vulnerabilities found")
@@ -175,7 +175,7 @@ class ScanSessionResponse(ScanBase):
 
 class ScanSessionListResponse(BaseModel):
     """Schema for paginated scan session list response."""
-    
+
     scan_sessions: List[ScanSessionResponse] = Field(..., description="List of scan sessions")
     pagination: Dict[str, Any] = Field(..., description="Pagination metadata")
     status_counts: Dict[str, int] = Field(default_factory=dict, description="Count by status")
@@ -209,7 +209,7 @@ class ScanSessionListResponse(BaseModel):
 
 class ScanConfiguration(BaseModel):
     """Schema for detailed scan configuration."""
-    
+
     target_id: str = Field(..., description="Target ID")
     phases: List[str] = Field(..., description="Scan phases to execute")
     tools: List[str] = Field(..., description="Tools to use in scan")
@@ -254,7 +254,7 @@ class ScanConfiguration(BaseModel):
 
 class ScanProgress(BaseModel):
     """Schema for real-time scan progress information."""
-    
+
     scan_session_id: str = Field(..., description="Scan session ID")
     overall_progress: float = Field(..., ge=0.0, le=100.0, description="Overall progress percentage")
     current_phase: Optional[str] = Field(None, description="Currently executing phase")
@@ -297,7 +297,7 @@ class ScanProgress(BaseModel):
 
 class ToolExecutionBase(BaseModel):
     """Base schema for tool execution data."""
-    
+
     tool_name: str = Field(..., description="Name of the tool")
     tool_category: str = Field(..., description="Tool category")
     command_executed: str = Field(..., description="Command that was executed")
@@ -305,7 +305,7 @@ class ToolExecutionBase(BaseModel):
 
 class ToolExecutionResponse(ToolExecutionBase):
     """Schema for tool execution response data."""
-    
+
     id: str = Field(..., description="Tool execution ID")
     scan_session_id: str = Field(..., description="Parent scan session ID")
     status: ToolStatus = Field(..., description="Tool execution status")
@@ -341,33 +341,33 @@ class ToolExecutionResponse(ToolExecutionBase):
 
 class ScanResults(BaseModel):
     """Schema for comprehensive scan results."""
-    
+
     scan_session_id: str = Field(..., description="Scan session ID")
     target_name: str = Field(..., description="Target name")
     scan_duration_seconds: Optional[float] = Field(None, description="Total scan duration")
     phases_completed: List[str] = Field(default_factory=list, description="Completed phases")
     tools_executed: List[str] = Field(default_factory=list, description="Tools that were executed")
-    
+
     # Discovery results
     subdomains_discovered: int = Field(0, description="Total subdomains discovered")
     endpoints_discovered: int = Field(0, description="Total endpoints discovered")
     services_discovered: int = Field(0, description="Total services discovered")
     technologies_identified: List[str] = Field(default_factory=list, description="Identified technologies")
-    
+
     # Vulnerability results
     vulnerabilities_found: int = Field(0, description="Total vulnerabilities found")
     vulnerability_breakdown: Dict[str, int] = Field(default_factory=dict, description="Vulnerabilities by severity")
     top_vulnerability_types: List[Dict[str, Union[str, int]]] = Field(default_factory=list, description="Most common vulnerability types")
-    
+
     # Tool results summary
     tool_results: List[Dict[str, Any]] = Field(default_factory=list, description="Per-tool result summaries")
     successful_tools: List[str] = Field(default_factory=list, description="Successfully executed tools")
     failed_tools: List[str] = Field(default_factory=list, description="Failed tool executions")
-    
+
     # File paths
     raw_output_files: Dict[str, str] = Field(default_factory=dict, description="Paths to raw output files")
     processed_results_file: Optional[str] = Field(None, description="Path to processed results file")
-    
+
     # Metadata
     scan_completed_at: Optional[datetime] = Field(None, description="Scan completion timestamp")
     results_generated_at: datetime = Field(default_factory=datetime.utcnow, description="Results generation timestamp")
@@ -409,7 +409,7 @@ class ScanResults(BaseModel):
 
 class ScanFilter(BaseModel):
     """Schema for scan filtering options."""
-    
+
     statuses: Optional[List[ScanStatus]] = Field(None, description="Filter by scan statuses")
     target_ids: Optional[List[str]] = Field(None, description="Filter by target IDs")
     created_after: Optional[datetime] = Field(None, description="Created after date")
@@ -442,18 +442,18 @@ class ScanFilter(BaseModel):
         created_before = values.get('created_before')
         completed_after = values.get('completed_after')
         completed_before = values.get('completed_before')
-        
+
         if created_after and created_before and created_after > created_before:
             raise ValueError('created_after must be before created_before')
-        
+
         if completed_after and completed_before and completed_after > completed_before:
             raise ValueError('completed_after must be before completed_before')
-        
+
         return values
 
 class ScanStatistics(BaseModel):
     """Schema for scan statistics."""
-    
+
     total_scans: int = Field(..., ge=0, description="Total number of scans")
     recent_scans: int = Field(..., ge=0, description="Recent scans count")
     status_distribution: Dict[str, int] = Field(..., description="Distribution by status")
@@ -486,7 +486,7 @@ class ScanStatistics(BaseModel):
 
 class ScanTrends(BaseModel):
     """Schema for scan trends analysis."""
-    
+
     period: Dict[str, Union[str, int]] = Field(..., description="Analysis period information")
     daily_scans: List[Dict[str, Union[str, int]]] = Field(..., description="Daily scan counts")
     status_trends: List[Dict[str, Union[str, int]]] = Field(..., description="Status trends over time")
@@ -495,7 +495,7 @@ class ScanTrends(BaseModel):
 
 class BulkScanOperation(BaseModel):
     """Schema for bulk operations on scan sessions."""
-    
+
     scan_session_ids: List[str] = Field(..., min_items=1, description="List of scan session IDs")
     operation: str = Field(..., regex=r'^(start|pause|resume|stop|delete|update_priority)', description="Operation to perform")
     parameters: Dict[str, Any] = Field(default_factory=dict, description="Operation-specific parameters")
@@ -516,7 +516,7 @@ class BulkScanOperation(BaseModel):
 
 class ScanTemplate(BaseModel):
     """Schema for scan templates."""
-    
+
     template_name: str = Field(..., min_length=3, max_length=100, description="Template name")
     description: str = Field(..., min_length=10, max_length=500, description="Template description")
     methodology_phases: List[str] = Field(..., description="Methodology phases")
@@ -549,7 +549,7 @@ class ScanTemplate(BaseModel):
 
 class ScanSchedule(BaseModel):
     """Schema for scheduled scans."""
-    
+
     schedule_name: str = Field(..., min_length=3, max_length=100, description="Schedule name")
     target_id: str = Field(..., description="Target ID to scan")
     scan_template: str = Field(..., description="Scan template to use")
@@ -573,7 +573,7 @@ class ScanSchedule(BaseModel):
 
 class ScanExport(BaseModel):
     """Schema for scan export data."""
-    
+
     scan_sessions: List[ScanSessionResponse] = Field(..., description="Scan sessions to export")
     export_format: str = Field(..., regex=r'^(csv|json|xml)', description="Export format")
     include_results: bool = Field(False, description="Include detailed scan results")
@@ -584,7 +584,7 @@ class ScanExport(BaseModel):
 
 class ScanValidation(BaseModel):
     """Schema for scan validation results."""
-    
+
     is_valid: bool = Field(..., description="Overall validation result")
     validation_errors: List[str] = Field(default_factory=list, description="Validation error messages")
     validation_warnings: List[str] = Field(default_factory=list, description="Validation warnings")
@@ -595,7 +595,7 @@ class ScanValidation(BaseModel):
 
 class ScanMetrics(BaseModel):
     """Schema for detailed scan metrics."""
-    
+
     scan_session_id: str = Field(..., description="Scan session ID")
     cpu_usage_percent: float = Field(0.0, ge=0.0, le=100.0, description="CPU usage percentage")
     memory_usage_mb: float = Field(0.0, ge=0.0, description="Memory usage in MB")
@@ -612,7 +612,7 @@ __all__ = [
     "ScanBase",
     "ScanSessionCreate",
     "ScanSessionUpdate",
-    "ScanSessionResponse", 
+    "ScanSessionResponse",
     "ScanSessionListResponse",
     "ScanConfiguration",
     "ScanProgress",

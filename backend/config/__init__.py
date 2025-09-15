@@ -28,15 +28,15 @@ __environment__ = ENVIRONMENT
 __all__ = [
     # Settings modules
     "base",
-    "development", 
+    "development",
     "production",
     "testing",
-    
+
     # Environment info
     "ENVIRONMENT",
     "__version__",
     "__environment__",
-    
+
     # Django settings (available after import)
     "settings",
 ]
@@ -44,11 +44,11 @@ __all__ = [
 def get_setting(setting_name, default=None):
     """
     Helper function to safely get Django settings.
-    
+
     Args:
         setting_name: Name of the setting
         default: Default value if setting doesn't exist
-        
+
     Returns:
         Setting value or default
     """
@@ -70,6 +70,6 @@ def is_testing():
 __all__.extend([
     "get_setting",
     "is_production",
-    "is_development", 
+    "is_development",
     "is_testing",
 ])

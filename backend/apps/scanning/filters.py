@@ -9,13 +9,13 @@ from .models import ScanSession, ToolExecution, ScanStatus, ToolStatus
 
 class ScanSessionFilter(django_filters.FilterSet):
     """Advanced filtering for scan sessions"""
-    
+
     # Status filtering
     status = django_filters.ChoiceFilter(
         choices=ScanStatus.choices,
         help_text="Filter by scan status"
     )
-    
+
     # Target filtering
     target = django_filters.UUIDFilter(
         field_name='target__id',
@@ -26,7 +26,7 @@ class ScanSessionFilter(django_filters.FilterSet):
         lookup_expr='icontains',
         help_text="Filter by target name (case-insensitive)"
     )
-    
+
     # Date range filtering
     created_after = django_filters.DateTimeFilter(
         field_name='created_at',
@@ -48,7 +48,7 @@ class ScanSessionFilter(django_filters.FilterSet):
         lookup_expr='lte',
         help_text="Filter sessions started before this date"
     )
-    
+
     # Progress filtering
     min_progress = django_filters.NumberFilter(
         field_name='total_progress',
@@ -60,7 +60,7 @@ class ScanSessionFilter(django_filters.FilterSet):
         lookup_expr='lte',
         help_text="Filter by maximum progress percentage"
     )
-    
+
     # Vulnerability filtering
     has_vulnerabilities = django_filters.BooleanFilter(
         method='filter_has_vulnerabilities',
@@ -75,7 +75,7 @@ class ScanSessionFilter(django_filters.FilterSet):
         method='filter_has_critical',
         help_text="Filter sessions with/without critical vulnerabilities"
     )
-    
+
     # Duration filtering
     duration_range = django_filters.ChoiceFilter(
         method='filter_duration_range',
@@ -86,13 +86,13 @@ class ScanSessionFilter(django_filters.FilterSet):
         ],
         help_text="Filter by scan duration"
     )
-    
+
     # Active scans
     is_active = django_filters.BooleanFilter(
         method='filter_is_active',
         help_text="Filter active (running/queued) scans"
     )
-    
+
     class Meta:
         model = ScanSession
         fields = [
@@ -101,7 +101,7 @@ class ScanSessionFilter(django_filters.FilterSet):
             'has_vulnerabilities', 'min_vulnerabilities', 'has_critical',
             'duration_range', 'is_active'
         ]
-    
+
     def filter_has_vulnerabilities(self, queryset, name, value):
         """Filter sessions with or without vulnerabilities"""
         if value is True:
@@ -109,7 +109,7 @@ class ScanSessionFilter(django_filters.FilterSet):
         elif value is False:
             return queryset.filter(total_vulnerabilities=0)
         return queryset
-    
+
     def filter_has_critical(self, queryset, name, value):
         """Filter sessions with or without critical vulnerabilities"""
         if value is True:
@@ -117,19 +117,19 @@ class ScanSessionFilter(django_filters.FilterSet):
         elif value is False:
             return queryset.filter(critical_vulnerabilities=0)
         return queryset
-    
+
     def filter_duration_range(self, queryset, name, value):
         """Filter by scan duration ranges"""
         if not value:
             return queryset
-        
+
         # Only consider completed scans for duration filtering
         completed_scans = queryset.filter(
             status=ScanStatus.COMPLETED,
             started_at__isnull=False,
             completed_at__isnull=False
         )
-        
+
         if value == 'short':
             # Less than 1 hour (3600 seconds)
             return completed_scans.extra(
@@ -148,9 +148,9 @@ class ScanSessionFilter(django_filters.FilterSet):
             return completed_scans.extra(
                 where=["EXTRACT(EPOCH FROM (completed_at - started_at)) > 21600"]
             )
-        
+
         return queryset
-    
+
     def filter_is_active(self, queryset, name, value):
         """Filter active (running or queued) scans"""
         if value is True:
@@ -161,13 +161,13 @@ class ScanSessionFilter(django_filters.FilterSet):
 
 class ToolExecutionFilter(django_filters.FilterSet):
     """Advanced filtering for tool executions"""
-    
+
     # Status filtering
     status = django_filters.ChoiceFilter(
         choices=ToolStatus.choices,
         help_text="Filter by tool execution status"
     )
-    
+
     # Tool filtering
     tool_name = django_filters.CharFilter(
         lookup_expr='icontains',
@@ -177,7 +177,7 @@ class ToolExecutionFilter(django_filters.FilterSet):
         lookup_expr='icontains',
         help_text="Filter by tool category"
     )
-    
+
     # Scan session filtering
     scan_session = django_filters.UUIDFilter(
         field_name='scan_session__id',
@@ -187,7 +187,7 @@ class ToolExecutionFilter(django_filters.FilterSet):
         field_name='scan_session__target__id',
         help_text="Filter by target ID"
     )
-    
+
     # Date range filtering
     created_after = django_filters.DateTimeFilter(
         field_name='created_at',
@@ -199,7 +199,7 @@ class ToolExecutionFilter(django_filters.FilterSet):
         lookup_expr='lte',
         help_text="Filter executions created before this date"
     )
-    
+
     # Execution time filtering
     min_execution_time = django_filters.NumberFilter(
         field_name='execution_time_seconds',
@@ -211,7 +211,7 @@ class ToolExecutionFilter(django_filters.FilterSet):
         lookup_expr='lte',
         help_text="Filter by maximum execution time (seconds)"
     )
-    
+
     # Results filtering
     has_results = django_filters.BooleanFilter(
         method='filter_has_results',
@@ -222,13 +222,13 @@ class ToolExecutionFilter(django_filters.FilterSet):
         lookup_expr='gte',
         help_text="Filter by minimum results count"
     )
-    
+
     # Error filtering
     has_errors = django_filters.BooleanFilter(
         method='filter_has_errors',
         help_text="Filter executions with/without errors"
     )
-    
+
     class Meta:
         model = ToolExecution
         fields = [
@@ -236,7 +236,7 @@ class ToolExecutionFilter(django_filters.FilterSet):
             'created_after', 'created_before', 'min_execution_time', 'max_execution_time',
             'has_results', 'min_results', 'has_errors'
         ]
-    
+
     def filter_has_results(self, queryset, name, value):
         """Filter executions with or without results"""
         if value is True:
@@ -244,7 +244,7 @@ class ToolExecutionFilter(django_filters.FilterSet):
         elif value is False:
             return queryset.filter(parsed_results_count=0)
         return queryset
-    
+
     def filter_has_errors(self, queryset, name, value):
         """Filter executions with or without errors"""
         if value is True:
@@ -252,4 +252,3 @@ class ToolExecutionFilter(django_filters.FilterSet):
         elif value is False:
             return queryset.filter(Q(error_message__isnull=True) | Q(error_message=''))
         return queryset
-      

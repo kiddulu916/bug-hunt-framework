@@ -7,7 +7,7 @@ from . import vulnerabilities, targets, scans, reports
 
 __all__ = [
     "vulnerabilities",
-    "targets", 
+    "targets",
     "scans",
     "reports"
 ]

@@ -15,18 +15,18 @@ class BugBountyPlatformException(Exception):
     """
     Base exception class for the bug bounty platform.
     """
-    
+
     def __init__(
-        self, 
-        message: str, 
-        error_code: Optional[str] = None, 
+        self,
+        message: str,
+        error_code: Optional[str] = None,
         details: Optional[Dict[str, Any]] = None
     ):
         self.message = message
         self.error_code = error_code
         self.details = details or {}
         super().__init__(self.message)
-    
+
     def __str__(self):
         return f"{self.error_code}: {self.message}" if self.error_code else self.message
 
@@ -38,21 +38,21 @@ class DatabaseException(BugBountyPlatformException):
 
 class RecordNotFoundException(DatabaseException):
     """Raised when a requested record is not found."""
-    
+
     def __init__(self, model_name: str, identifier: Any):
         message = f"{model_name} with identifier '{identifier}' not found"
         super().__init__(message, "RECORD_NOT_FOUND", {"model": model_name, "id": identifier})
 
 class DuplicateRecordException(DatabaseException):
     """Raised when attempting to create a duplicate record."""
-    
+
     def __init__(self, model_name: str, field: str, value: Any):
         message = f"{model_name} with {field}='{value}' already exists"
         super().__init__(message, "DUPLICATE_RECORD", {"model": model_name, "field": field, "value": value})
 
 class InvalidDataException(DatabaseException):
     """Raised when data validation fails."""
-    
+
     def __init__(self, field: str, value: Any, reason: str):
         message = f"Invalid value for field '{field}': {reason}"
         super().__init__(message, "INVALID_DATA", {"field": field, "value": value, "reason": reason})
@@ -65,16 +65,16 @@ class AuthenticationException(BugBountyPlatformException):
 
 class InvalidCredentialsException(AuthenticationException):
     """Raised when login credentials are invalid."""
-    
+
     def __init__(self):
         super().__init__(
-            "Invalid username or password", 
+            "Invalid username or password",
             "INVALID_CREDENTIALS"
         )
 
 class TokenExpiredException(AuthenticationException):
     """Raised when JWT token has expired."""
-    
+
     def __init__(self):
         super().__init__(
             "Token has expired",
@@ -83,7 +83,7 @@ class TokenExpiredException(AuthenticationException):
 
 class InvalidTokenException(AuthenticationException):
     """Raised when JWT token is malformed or invalid."""
-    
+
     def __init__(self):
         super().__init__(
             "Invalid token",
@@ -92,7 +92,7 @@ class InvalidTokenException(AuthenticationException):
 
 class InsufficientPermissionsException(BugBountyPlatformException):
     """Raised when user lacks required permissions."""
-    
+
     def __init__(self, required_permissions: list):
         message = f"Insufficient permissions. Required: {', '.join(required_permissions)}"
         super().__init__(
@@ -109,14 +109,14 @@ class ScanningException(BugBountyPlatformException):
 
 class ToolNotFoundException(ScanningException):
     """Raised when a required scanning tool is not found."""
-    
+
     def __init__(self, tool_name: str):
         message = f"Scanning tool '{tool_name}' not found or not executable"
         super().__init__(message, "TOOL_NOT_FOUND", {"tool": tool_name})
 
 class ToolExecutionException(ScanningException):
     """Raised when a scanning tool fails to execute properly."""
-    
+
     def __init__(self, tool_name: str, exit_code: int, stderr: str):
         message = f"Tool '{tool_name}' execution failed with exit code {exit_code}"
         super().__init__(
@@ -127,21 +127,21 @@ class ToolExecutionException(ScanningException):
 
 class InvalidScanConfigurationException(ScanningException):
     """Raised when scan configuration is invalid."""
-    
+
     def __init__(self, config_issue: str):
         message = f"Invalid scan configuration: {config_issue}"
         super().__init__(message, "INVALID_SCAN_CONFIG", {"issue": config_issue})
 
 class ScanTimeoutException(ScanningException):
     """Raised when a scan times out."""
-    
+
     def __init__(self, timeout_seconds: int):
         message = f"Scan timed out after {timeout_seconds} seconds"
         super().__init__(message, "SCAN_TIMEOUT", {"timeout": timeout_seconds})
 
 class ConcurrentScanLimitException(ScanningException):
     """Raised when maximum concurrent scans limit is exceeded."""
-    
+
     def __init__(self, max_concurrent: int):
         message = f"Maximum concurrent scans limit ({max_concurrent}) exceeded"
         super().__init__(message, "CONCURRENT_SCAN_LIMIT", {"max_concurrent": max_concurrent})
@@ -154,21 +154,21 @@ class TargetException(BugBountyPlatformException):
 
 class InvalidTargetException(TargetException):
     """Raised when target configuration is invalid."""
-    
+
     def __init__(self, reason: str):
         message = f"Invalid target configuration: {reason}"
         super().__init__(message, "INVALID_TARGET", {"reason": reason})
 
 class OutOfScopeException(TargetException):
     """Raised when attempting to scan out-of-scope assets."""
-    
+
     def __init__(self, asset: str):
         message = f"Asset '{asset}' is out of scope for this target"
         super().__init__(message, "OUT_OF_SCOPE", {"asset": asset})
 
 class RateLimitException(TargetException):
     """Raised when rate limiting is triggered."""
-    
+
     def __init__(self, limit: str, retry_after: int):
         message = f"Rate limit exceeded: {limit}"
         super().__init__(
@@ -185,7 +185,7 @@ class VulnerabilityException(BugBountyPlatformException):
 
 class InvalidVulnerabilityDataException(VulnerabilityException):
     """Raised when vulnerability data is invalid or incomplete."""
-    
+
     def __init__(self, missing_fields: list):
         message = f"Invalid vulnerability data. Missing fields: {', '.join(missing_fields)}"
         super().__init__(
@@ -196,7 +196,7 @@ class InvalidVulnerabilityDataException(VulnerabilityException):
 
 class VulnerabilityProcessingException(VulnerabilityException):
     """Raised when vulnerability processing fails."""
-    
+
     def __init__(self, step: str, error: str):
         message = f"Vulnerability processing failed at step '{step}': {error}"
         super().__init__(
@@ -213,7 +213,7 @@ class ReportException(BugBountyPlatformException):
 
 class ReportGenerationException(ReportException):
     """Raised when report generation fails."""
-    
+
     def __init__(self, report_type: str, error: str):
         message = f"Failed to generate {report_type} report: {error}"
         super().__init__(
@@ -224,7 +224,7 @@ class ReportGenerationException(ReportException):
 
 class TemplateNotFoundException(ReportException):
     """Raised when report template is not found."""
-    
+
     def __init__(self, template_name: str):
         message = f"Report template '{template_name}' not found"
         super().__init__(message, "TEMPLATE_NOT_FOUND", {"template": template_name})
@@ -237,14 +237,14 @@ class FileHandlingException(BugBountyPlatformException):
 
 class FileUploadException(FileHandlingException):
     """Raised when file upload fails."""
-    
+
     def __init__(self, filename: str, reason: str):
         message = f"File upload failed for '{filename}': {reason}"
         super().__init__(message, "FILE_UPLOAD_FAILED", {"filename": filename, "reason": reason})
 
 class FileProcessingException(FileHandlingException):
     """Raised when file processing fails."""
-    
+
     def __init__(self, filename: str, operation: str, error: str):
         message = f"File processing failed for '{filename}' during {operation}: {error}"
         super().__init__(
@@ -255,7 +255,7 @@ class FileProcessingException(FileHandlingException):
 
 class InvalidFileFormatException(FileHandlingException):
     """Raised when file format is not supported."""
-    
+
     def __init__(self, filename: str, expected_formats: list):
         message = f"Invalid file format for '{filename}'. Expected: {', '.join(expected_formats)}"
         super().__init__(
@@ -272,7 +272,7 @@ class ExternalAPIException(BugBountyPlatformException):
 
 class APIRateLimitException(ExternalAPIException):
     """Raised when external API rate limit is hit."""
-    
+
     def __init__(self, api_name: str, retry_after: int):
         message = f"API rate limit exceeded for {api_name}"
         super().__init__(
@@ -283,14 +283,14 @@ class APIRateLimitException(ExternalAPIException):
 
 class APITimeoutException(ExternalAPIException):
     """Raised when external API call times out."""
-    
+
     def __init__(self, api_name: str, timeout: int):
         message = f"API call to {api_name} timed out after {timeout} seconds"
         super().__init__(message, "API_TIMEOUT", {"api": api_name, "timeout": timeout})
 
 class APIAuthenticationException(ExternalAPIException):
     """Raised when external API authentication fails."""
-    
+
     def __init__(self, api_name: str):
         message = f"Authentication failed for {api_name} API"
         super().__init__(message, "API_AUTH_FAILED", {"api": api_name})
@@ -328,9 +328,9 @@ def create_http_exception_from_platform_exception(exc: BugBountyPlatformExceptio
         "API_TIMEOUT": status.HTTP_504_GATEWAY_TIMEOUT,
         "API_AUTH_FAILED": status.HTTP_502_BAD_GATEWAY,
     }
-    
+
     status_code = status_code_mapping.get(exc.error_code, status.HTTP_500_INTERNAL_SERVER_ERROR)
-    
+
     return HTTPException(
         status_code=status_code,
         detail={
@@ -372,27 +372,27 @@ def handle_database_error(func):
                 raise InvalidDataException("unknown", "unknown", str(e))
             else:
                 raise DatabaseException(str(e), "DATABASE_ERROR")
-    
+
     return wrapper
 
 # Export all exception classes
 __all__ = [
     # Base exceptions
     'BugBountyPlatformException',
-    
+
     # Database exceptions
     'DatabaseException',
     'RecordNotFoundException',
     'DuplicateRecordException',
     'InvalidDataException',
-    
+
     # Authentication exceptions
     'AuthenticationException',
     'InvalidCredentialsException',
     'TokenExpiredException',
     'InvalidTokenException',
     'InsufficientPermissionsException',
-    
+
     # Scanning exceptions
     'ScanningException',
     'ToolNotFoundException',
@@ -400,35 +400,35 @@ __all__ = [
     'InvalidScanConfigurationException',
     'ScanTimeoutException',
     'ConcurrentScanLimitException',
-    
+
     # Target exceptions
     'TargetException',
     'InvalidTargetException',
     'OutOfScopeException',
     'RateLimitException',
-    
+
     # Vulnerability exceptions
     'VulnerabilityException',
     'InvalidVulnerabilityDataException',
     'VulnerabilityProcessingException',
-    
+
     # Report exceptions
     'ReportException',
     'ReportGenerationException',
     'TemplateNotFoundException',
-    
+
     # File handling exceptions
     'FileHandlingException',
     'FileUploadException',
     'FileProcessingException',
     'InvalidFileFormatException',
-    
+
     # External API exceptions
     'ExternalAPIException',
     'APIRateLimitException',
     'APITimeoutException',
     'APIAuthenticationException',
-    
+
     # Utilities
     'create_http_exception_from_platform_exception',
     'log_exception',

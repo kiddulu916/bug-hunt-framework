@@ -16,7 +16,7 @@ logger = logging.getLogger(__name__)
 
 # Database URL from environment
 DATABASE_URL = os.getenv(
-    'DATABASE_URL', 
+    'DATABASE_URL',
     'postgresql://bugbounty_user:password@localhost:5432/bugbounty_platform'
 )
 
@@ -52,7 +52,7 @@ def get_db() -> Generator[Session, None, None]:
     try:
         yield db
     except Exception as e:
-        logger.error(f"Database error: {e}")
+        logger.error("Database error: %s", e)
         db.rollback()
         raise
     finally:
@@ -63,7 +63,7 @@ def get_db_session():
     """
     Context manager for database sessions.
     Use this for manual database operations outside of FastAPI dependencies.
-    
+
     Example:
         with get_db_session() as db:
             user = db.query(User).first()
@@ -73,7 +73,7 @@ def get_db_session():
         yield db
         db.commit()
     except Exception as e:
-        logger.error(f"Database session error: {e}")
+        logger.error("Database session error: %s", e)
         db.rollback()
         raise
     finally:
@@ -81,37 +81,37 @@ def get_db_session():
 
 class DatabaseManager:
     """Database manager for handling connections and transactions."""
-    
+
     def __init__(self):
         self.engine = engine
         self.SessionLocal = SessionLocal
-    
+
     def create_tables(self):
         """Create all tables defined in models."""
         try:
             Base.metadata.create_all(bind=self.engine)
             logger.info("Database tables created successfully")
         except Exception as e:
-            logger.error(f"Error creating database tables: {e}")
+            logger.error("Error creating database tables: %s", e)
             raise
-    
+
     def drop_tables(self):
         """Drop all tables (use with caution!)"""
         try:
             Base.metadata.drop_all(bind=self.engine)
             logger.warning("All database tables dropped")
         except Exception as e:
-            logger.error(f"Error dropping database tables: {e}")
+            logger.error("Error dropping database tables: %s", e)
             raise
-    
+
     def get_session(self) -> Session:
         """Get a new database session."""
         return self.SessionLocal()
-    
+
     def close_all_sessions(self):
         """Close all database sessions."""
         self.SessionLocal.close_all()
-    
+
     def execute_raw_sql(self, sql: str, params: dict = None):
         """Execute raw SQL query."""
         with get_db_session() as db:
@@ -152,7 +152,7 @@ def check_database_health() -> bool:
             db.execute("SELECT 1")
         return True
     except Exception as e:
-        logger.error(f"Database health check failed: {e}")
+        logger.error("Database health check failed: %s", e)
         return False
 
 # Database statistics

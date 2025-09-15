@@ -21,7 +21,7 @@ logger = logging.getLogger(__name__)
 class ToolStatus(Enum):
     """Tool execution status"""
     PENDING = "pending"
-    RUNNING = "running" 
+    RUNNING = "running"
     COMPLETED = "completed"
     FAILED = "failed"
     TIMEOUT = "timeout"
@@ -74,33 +74,33 @@ class ToolConfig:
 class BaseTool(ABC):
     """
     Abstract base class for all penetration testing tools.
-    
+
     Provides common functionality for tool execution, output handling,
     rate limiting, and result parsing.
     """
-    
+
     def __init__(self, name: str, category: ToolCategory, binary_path: str = None):
         self.name = name
         self.category = category
         self.binary_path = binary_path or name
         self.logger = logging.getLogger(f'tools.{name}')
         self.execution_id = str(uuid.uuid4())
-        
+
     @abstractmethod
     def build_command(self, config: ToolConfig) -> List[str]:
         """Build the command to execute the tool"""
         pass
-    
+
     @abstractmethod
     def parse_output(self, stdout: str, stderr: str, output_files: List[str]) -> List[Dict[str, Any]]:
         """Parse tool output into structured data"""
         pass
-    
+
     def validate_target(self, target: str, scope_urls: List[str] = None) -> bool:
         """Validate if target is in scope"""
         if not scope_urls:
             return True
-            
+
         from urllib.parse import urlparse
         try:
             target_domain = urlparse(target if target.startswith(('http://', 'https://')) else f'http://{target}').netloc
@@ -110,28 +110,28 @@ class BaseTool(ABC):
                     return True
             return False
         except Exception as e:
-            self.logger.warning(f"Target validation error: {e}")
+            self.logger.warning("Target validation error: %s", e)
             return False
-    
+
     def setup_output_directory(self, base_dir: str) -> str:
         """Create and return tool-specific output directory"""
         output_dir = Path(base_dir) / self.name / self.execution_id
         output_dir.mkdir(parents=True, exist_ok=True)
         return str(output_dir)
-    
+
     def execute(self, config: ToolConfig) -> ToolResult:
         """
         Execute the tool with given configuration
-        
+
         Args:
             config: ToolConfig object with execution parameters
-            
+
         Returns:
             ToolResult object with execution results and parsed data
         """
         start_time = datetime.now()
-        self.logger.info(f"Starting {self.name} execution for target: {config.target}")
-        
+        self.logger.info("Starting {self.name} execution for target: %s", config.target)
+
         # Validate target scope
         if not self.validate_target(config.target, config.scope_urls):
             return ToolResult(
@@ -145,15 +145,15 @@ class BaseTool(ABC):
                 parsed_results=[],
                 error_message="Target validation failed: not in scope"
             )
-        
+
         # Setup output directory
         output_dir = self.setup_output_directory(config.output_dir)
         config.output_dir = output_dir
-        
+
         # Build command
         try:
             command = self.build_command(config)
-            self.logger.debug(f"Executing command: {' '.join(command)}")
+            self.logger.debug("Executing command: %s", ' '.join(command))
         except Exception as e:
             return ToolResult(
                 tool_name=self.name,
@@ -166,7 +166,7 @@ class BaseTool(ABC):
                 parsed_results=[],
                 error_message=f"Command building failed: {e}"
             )
-        
+
         # Execute command
         try:
             process = subprocess.run(
@@ -176,22 +176,22 @@ class BaseTool(ABC):
                 timeout=config.timeout or 3600,  # Default 1 hour timeout
                 cwd=output_dir
             )
-            
+
             execution_time = (datetime.now() - start_time).total_seconds()
-            
+
             # Find output files
             output_files = []
             for file_path in Path(output_dir).glob('*'):
                 if file_path.is_file():
                     output_files.append(str(file_path))
-            
+
             # Parse results
             try:
                 parsed_results = self.parse_output(process.stdout, process.stderr, output_files)
             except Exception as e:
-                self.logger.error(f"Output parsing failed: {e}")
+                self.logger.error("Output parsing failed: %s", e)
                 parsed_results = []
-            
+
             # Determine status
             if process.returncode == 0:
                 status = ToolStatus.COMPLETED
@@ -199,7 +199,7 @@ class BaseTool(ABC):
             else:
                 status = ToolStatus.FAILED
                 error_message = f"Tool exited with code {process.returncode}"
-            
+
             result = ToolResult(
                 tool_name=self.name,
                 status=status,
@@ -216,10 +216,10 @@ class BaseTool(ABC):
                     'output_directory': output_dir
                 }
             )
-            
-            self.logger.info(f"{self.name} completed in {execution_time:.2f}s with {len(parsed_results)} results")
+
+            self.logger.info("{self.name} completed in {execution_time:.2f}s with %s results", len(parsed_results))
             return result
-            
+
         except subprocess.TimeoutExpired:
             execution_time = (datetime.now() - start_time).total_seconds()
             return ToolResult(
@@ -233,10 +233,10 @@ class BaseTool(ABC):
                 parsed_results=[],
                 error_message=f"Tool execution timed out after {config.timeout}s"
             )
-            
+
         except Exception as e:
             execution_time = (datetime.now() - start_time).total_seconds()
-            self.logger.error(f"Tool execution failed: {e}")
+            self.logger.error("Tool execution failed: %s", e)
             return ToolResult(
                 tool_name=self.name,
                 status=ToolStatus.FAILED,
@@ -248,7 +248,7 @@ class BaseTool(ABC):
                 parsed_results=[],
                 error_message=f"Execution failed: {e}"
             )
-    
+
     def get_version(self) -> Optional[str]:
         """Get tool version if available"""
         try:
@@ -263,7 +263,7 @@ class BaseTool(ABC):
         except Exception:
             pass
         return None
-    
+
     def is_available(self) -> bool:
         """Check if tool binary is available"""
         try:
@@ -279,25 +279,25 @@ class BaseTool(ABC):
 
 class ToolRegistry:
     """Registry for managing available tools"""
-    
+
     def __init__(self):
         self._tools: Dict[str, BaseTool] = {}
         self._categories: Dict[ToolCategory, List[str]] = {category: [] for category in ToolCategory}
-    
+
     def register(self, tool: BaseTool) -> None:
         """Register a tool"""
         self._tools[tool.name] = tool
         self._categories[tool.category].append(tool.name)
-        logger.info(f"Registered tool: {tool.name} ({tool.category.value})")
-    
+        logger.info("Registered tool: {tool.name} (%s)", tool.category.value)
+
     def get_tool(self, name: str) -> Optional[BaseTool]:
         """Get tool by name"""
         return self._tools.get(name)
-    
+
     def get_tools_by_category(self, category: ToolCategory) -> List[BaseTool]:
         """Get all tools in a category"""
         return [self._tools[name] for name in self._categories[category] if name in self._tools]
-    
+
     def list_available_tools(self) -> Dict[str, List[str]]:
         """List all available tools grouped by category"""
         available = {}
@@ -309,13 +309,13 @@ class ToolRegistry:
                     available_tools.append(name)
             available[category.value] = available_tools
         return available
-    
+
     def get_tool_info(self, name: str) -> Optional[Dict[str, Any]]:
         """Get detailed tool information"""
         tool = self.get_tool(name)
         if not tool:
             return None
-            
+
         return {
             'name': tool.name,
             'category': tool.category.value,

@@ -31,14 +31,14 @@ class DiscoveryMethod(models.TextChoices):
 
 class ReconResult(models.Model):
     """Reconnaissance results from passive and active discovery"""
-    
+
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
     scan_session = models.ForeignKey(
-        ScanSession, 
-        on_delete=models.CASCADE, 
+        ScanSession,
+        on_delete=models.CASCADE,
         related_name='recon_results'
     )
-    
+
     # Discovery Information
     result_type = models.CharField(
         max_length=50,
@@ -46,50 +46,50 @@ class ReconResult(models.Model):
         help_text="Type of asset discovered"
     )
     discovered_asset = models.CharField(
-        max_length=1000, 
+        max_length=1000,
         help_text="The discovered asset (URL, domain, IP, etc.)"
     )
-    
+
     # Asset Details
     ip_address = models.GenericIPAddressField(
-        blank=True, 
+        blank=True,
         null=True,
         help_text="Resolved IP address"
     )
     port = models.IntegerField(
-        blank=True, 
+        blank=True,
         null=True,
         help_text="Port number if applicable"
     )
     protocol = models.CharField(
-        max_length=20, 
+        max_length=20,
         blank=True,
         help_text="Protocol (http, https, tcp, udp)"
     )
     service_name = models.CharField(
-        max_length=100, 
+        max_length=100,
         blank=True,
         help_text="Service running on the port"
     )
     service_version = models.CharField(
-        max_length=200, 
+        max_length=200,
         blank=True,
         help_text="Version of the service"
     )
-    
+
     # HTTP Specific Details
     status_code = models.IntegerField(
-        blank=True, 
+        blank=True,
         null=True,
         help_text="HTTP status code"
     )
     response_size = models.IntegerField(
-        blank=True, 
+        blank=True,
         null=True,
         help_text="HTTP response size in bytes"
     )
     title = models.CharField(
-        max_length=500, 
+        max_length=500,
         blank=True,
         help_text="Page title"
     )
@@ -99,7 +99,7 @@ class ReconResult(models.Model):
         blank=True,
         help_text="Detected technologies"
     )
-    
+
     # Discovery Source
     discovered_by_tool = models.CharField(
         max_length=100,
@@ -114,18 +114,18 @@ class ReconResult(models.Model):
         default=0.0,
         help_text="Confidence in result accuracy (0-1)"
     )
-    
+
     # Scope Validation
     is_in_scope = models.BooleanField(
         null=True,
         help_text="Whether this asset is in testing scope"
     )
     scope_validation_reason = models.CharField(
-        max_length=500, 
+        max_length=500,
         blank=True,
         help_text="Reason for scope decision"
     )
-    
+
     # Additional Data
     headers = models.JSONField(
         default=dict,
@@ -137,10 +137,10 @@ class ReconResult(models.Model):
         blank=True,
         help_text="Additional metadata about the asset"
     )
-    
+
     # Metadata
     discovered_at = models.DateTimeField(auto_now_add=True)
-    
+
     class Meta:
         db_table = 'recon_results'
         ordering = ['-discovered_at']
@@ -152,22 +152,22 @@ class ReconResult(models.Model):
         ]
         # Prevent duplicate results within the same scan
         unique_together = ['scan_session', 'discovered_asset', 'result_type']
-    
+
     def __str__(self):
         return f"{self.get_result_type_display()}: {self.discovered_asset}"
-    
+
     @property
     def is_web_asset(self):
         """Check if this is a web-accessible asset"""
         return self.protocol in ['http', 'https'] and self.status_code is not None
-    
+
     @property
     def is_live(self):
         """Check if asset is responding"""
         if self.status_code:
             return self.status_code < 400
         return False
-    
+
     def get_full_url(self):
         """Construct full URL for web assets"""
         if self.result_type == ReconResultType.ENDPOINT:
@@ -175,12 +175,12 @@ class ReconResult(models.Model):
         elif self.result_type == ReconResultType.SUBDOMAIN and self.protocol:
             return f"{self.protocol}://{self.discovered_asset}"
         return None
-    
+
     @classmethod
     def get_stats_by_scan(cls, scan_session):
         """Get statistics for a scan session"""
         results = cls.objects.filter(scan_session=scan_session)
-        
+
         return {
             'total_results': results.count(),
             'by_type': {

@@ -23,14 +23,14 @@ class ReportFormat(models.TextChoices):
 
 class Report(models.Model):
     """Generated penetration testing reports"""
-    
+
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
     scan_session = models.ForeignKey(
-        ScanSession, 
-        on_delete=models.CASCADE, 
+        ScanSession,
+        on_delete=models.CASCADE,
         related_name='reports'
     )
-    
+
     report_name = models.CharField(
         max_length=255,
         help_text="Name of the generated report"
@@ -46,7 +46,7 @@ class Report(models.Model):
         default=ReportFormat.PDF,
         help_text="Output format of the report"
     )
-    
+
     # Report Content
     executive_summary = models.TextField(
         blank=True,
@@ -64,7 +64,7 @@ class Report(models.Model):
         blank=True,
         help_text="Security recommendations"
     )
-    
+
     # File Information
     pdf_file_path = models.FileField(
         upload_to='reports/pdf/',
@@ -84,7 +84,7 @@ class Report(models.Model):
         null=True,
         help_text="Path to JSON data export"
     )
-    
+
     # Report Statistics
     total_vulnerabilities_reported = models.IntegerField(
         default=0,
@@ -95,7 +95,7 @@ class Report(models.Model):
     medium_count = models.IntegerField(default=0)
     low_count = models.IntegerField(default=0)
     info_count = models.IntegerField(default=0)
-    
+
     # PII Redaction Status
     pii_redacted = models.BooleanField(
         default=False,
@@ -106,7 +106,7 @@ class Report(models.Model):
         blank=True,
         help_text="PII redaction rules that were applied"
     )
-    
+
     # Report Configuration
     include_raw_data = models.BooleanField(
         default=False,
@@ -124,7 +124,7 @@ class Report(models.Model):
         default=True,
         help_text="Include exploitation chain details"
     )
-    
+
     # Template and Styling
     template_used = models.CharField(
         max_length=100,
@@ -136,7 +136,7 @@ class Report(models.Model):
         blank=True,
         help_text="Custom styling options applied"
     )
-    
+
     # Metadata
     generated_at = models.DateTimeField(auto_now_add=True)
     generated_by = models.CharField(
@@ -149,7 +149,7 @@ class Report(models.Model):
         null=True,
         help_text="Size of generated report file in bytes"
     )
-    
+
     class Meta:
         db_table = 'reports'
         ordering = ['-generated_at']
@@ -159,10 +159,10 @@ class Report(models.Model):
             models.Index(fields=['report_type']),
             models.Index(fields=['pii_redacted']),
         ]
-    
+
     def __str__(self):
         return f"{self.report_name} - {self.get_report_type_display()}"
-    
+
     @property
     def vulnerability_summary(self):
         """Get vulnerability count summary"""
@@ -174,19 +174,19 @@ class Report(models.Model):
             'low': self.low_count,
             'info': self.info_count,
         }
-    
+
     @property
     def file_size_human(self):
         """Get human-readable file size"""
         if not self.file_size_bytes:
             return "Unknown"
-        
+
         for unit in ['B', 'KB', 'MB', 'GB']:
             if self.file_size_bytes < 1024.0:
                 return f"{self.file_size_bytes:.1f} {unit}"
             self.file_size_bytes /= 1024.0
         return f"{self.file_size_bytes:.1f} TB"
-    
+
     def get_primary_file(self):
         """Get the primary report file based on format"""
         format_mapping = {
@@ -195,14 +195,14 @@ class Report(models.Model):
             'json': self.json_file_path,
         }
         return format_mapping.get(self.report_format)
-    
+
     @classmethod
     def get_report_stats(cls, scan_session=None):
         """Get report generation statistics"""
         queryset = cls.objects.all()
         if scan_session:
             queryset = queryset.filter(scan_session=scan_session)
-        
+
         return {
             'total_reports': queryset.count(),
             'by_type': {
@@ -221,9 +221,9 @@ class Report(models.Model):
 
 class ReportTemplate(models.Model):
     """Customizable report templates"""
-    
+
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
-    
+
     template_name = models.CharField(
         max_length=255,
         unique=True,
@@ -234,7 +234,7 @@ class ReportTemplate(models.Model):
         choices=ReportType.choices,
         help_text="Type of reports this template is for"
     )
-    
+
     # Template Content
     template_content = models.TextField(
         help_text="Jinja2 template content"
@@ -247,7 +247,7 @@ class ReportTemplate(models.Model):
         blank=True,
         help_text="JavaScript code for interactive elements"
     )
-    
+
     # Template Configuration
     default_sections = models.JSONField(
         default=list,
@@ -261,7 +261,7 @@ class ReportTemplate(models.Model):
         default=list,
         help_text="Optional data fields for this template"
     )
-    
+
     # Metadata
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
@@ -273,13 +273,13 @@ class ReportTemplate(models.Model):
         default=False,
         help_text="Whether this is the default template for its type"
     )
-    
+
     # Usage Statistics
     usage_count = models.IntegerField(
         default=0,
         help_text="Number of times this template has been used"
     )
-    
+
     class Meta:
         db_table = 'report_templates'
         ordering = ['template_name']
@@ -288,15 +288,15 @@ class ReportTemplate(models.Model):
             models.Index(fields=['is_active']),
             models.Index(fields=['is_default']),
         ]
-    
+
     def __str__(self):
         return f"{self.template_name} ({self.get_template_type_display()})"
-    
+
     def increment_usage(self):
         """Increment usage counter"""
         self.usage_count += 1
         self.save(update_fields=['usage_count'])
-    
+
     @classmethod
     def get_default_template(cls, template_type):
         """Get default template for a specific type"""
@@ -305,7 +305,7 @@ class ReportTemplate(models.Model):
             is_default=True,
             is_active=True
         ).first()
-    
+
     @classmethod
     def get_available_templates(cls, template_type=None):
         """Get all available templates"""

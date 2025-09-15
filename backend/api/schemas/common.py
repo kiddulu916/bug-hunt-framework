@@ -14,7 +14,7 @@ T = TypeVar('T')
 
 class PaginationMeta(BaseModel):
     """Schema for pagination metadata."""
-    
+
     count: int = Field(..., ge=0, description="Total number of items")
     total_pages: int = Field(..., ge=1, description="Total number of pages")
     current_page: int = Field(..., ge=1, description="Current page number")
@@ -44,13 +44,13 @@ class PaginationMeta(BaseModel):
 
 class PaginatedResponse(GenericModel, Generic[T]):
     """Generic schema for paginated API responses."""
-    
+
     items: List[T] = Field(..., description="List of items")
     pagination: PaginationMeta = Field(..., description="Pagination metadata")
 
 class StatusResponse(BaseModel):
     """Schema for simple status responses."""
-    
+
     status: str = Field(..., description="Operation status")
     message: str = Field(..., description="Status message")
     details: Optional[Dict[str, Any]] = Field(None, description="Additional details")
@@ -68,7 +68,7 @@ class StatusResponse(BaseModel):
 
 class ErrorResponse(BaseModel):
     """Schema for API error responses."""
-    
+
     error: str = Field(..., description="Error type")
     message: str = Field(..., description="Error message")
     error_code: Optional[str] = Field(None, description="Specific error code")
@@ -93,7 +93,7 @@ class ErrorResponse(BaseModel):
 
 class HealthCheckResponse(BaseModel):
     """Schema for health check responses."""
-    
+
     status: str = Field(..., regex=r'^(healthy|unhealthy|degraded)$', description="Overall health status")
     service: str = Field(..., description="Service name")
     version: str = Field(..., description="Service version")
@@ -124,7 +124,7 @@ class HealthCheckResponse(BaseModel):
 
 class SearchFilter(BaseModel):
     """Schema for search and filtering options."""
-    
+
     query: Optional[str] = Field(None, min_length=1, max_length=500, description="Search query")
     fields: Optional[List[str]] = Field(None, description="Fields to search in")
     filters: Optional[Dict[str, Any]] = Field(None, description="Additional filters")
@@ -158,7 +158,7 @@ class SearchFilter(BaseModel):
 
 class BulkOperationRequest(BaseModel):
     """Schema for bulk operation requests."""
-    
+
     item_ids: List[str] = Field(..., min_items=1, max_items=100, description="List of item IDs")
     operation: str = Field(..., description="Operation to perform")
     parameters: Optional[Dict[str, Any]] = Field(None, description="Operation parameters")
@@ -182,7 +182,7 @@ class BulkOperationRequest(BaseModel):
 
 class BulkOperationResponse(BaseModel):
     """Schema for bulk operation responses."""
-    
+
     operation: str = Field(..., description="Operation performed")
     total_items: int = Field(..., ge=0, description="Total items processed")
     successful: int = Field(..., ge=0, description="Successfully processed items")
@@ -211,7 +211,7 @@ class BulkOperationResponse(BaseModel):
 
 class FileUploadResponse(BaseModel):
     """Schema for file upload responses."""
-    
+
     filename: str = Field(..., description="Uploaded filename")
     original_filename: str = Field(..., description="Original filename")
     file_size: int = Field(..., ge=0, description="File size in bytes")
@@ -237,7 +237,7 @@ class FileUploadResponse(BaseModel):
 
 class ExportRequest(BaseModel):
     """Schema for data export requests."""
-    
+
     export_format: str = Field(..., regex=r'^(csv|json|xml|xlsx|pdf)$', description="Export format")
     include_metadata: bool = Field(True, description="Include metadata in export")
     filters: Optional[Dict[str, Any]] = Field(None, description="Export filters")
@@ -265,7 +265,7 @@ class ExportRequest(BaseModel):
 
 class ExportResponse(BaseModel):
     """Schema for data export responses."""
-    
+
     export_id: str = Field(..., description="Export identifier")
     export_format: str = Field(..., description="Export format")
     file_path: Optional[str] = Field(None, description="Export file path")
@@ -279,7 +279,7 @@ class ExportResponse(BaseModel):
 
 class NotificationSettings(BaseModel):
     """Schema for notification preferences."""
-    
+
     email_notifications: bool = Field(True, description="Enable email notifications")
     webhook_notifications: bool = Field(False, description="Enable webhook notifications")
     notification_types: List[str] = Field(default_factory=list, description="Enabled notification types")
@@ -297,7 +297,7 @@ class NotificationSettings(BaseModel):
 
 class UserPreferences(BaseModel):
     """Schema for user preferences."""
-    
+
     theme: str = Field("light", regex=r'^(light|dark|auto)$', description="UI theme preference")
     language: str = Field("en", description="Language preference")
     timezone: str = Field("UTC", description="Timezone preference")
@@ -307,7 +307,7 @@ class UserPreferences(BaseModel):
 
 class SystemConfiguration(BaseModel):
     """Schema for system configuration settings."""
-    
+
     maintenance_mode: bool = Field(False, description="System maintenance mode")
     max_concurrent_scans: int = Field(5, ge=1, le=20, description="Maximum concurrent scans")
     default_scan_timeout: int = Field(3600, ge=300, le=86400, description="Default scan timeout in seconds")
@@ -320,7 +320,7 @@ class SystemConfiguration(BaseModel):
 
 class ValidationResult(BaseModel):
     """Schema for validation results."""
-    
+
     is_valid: bool = Field(..., description="Overall validation result")
     errors: List[str] = Field(default_factory=list, description="Validation errors")
     warnings: List[str] = Field(default_factory=list, description="Validation warnings")
@@ -329,7 +329,7 @@ class ValidationResult(BaseModel):
 
 class TimeRange(BaseModel):
     """Schema for time range specifications."""
-    
+
     start: datetime = Field(..., description="Range start time")
     end: datetime = Field(..., description="Range end time")
     timezone: Optional[str] = Field(None, description="Timezone identifier")
@@ -346,7 +346,7 @@ __all__ = [
     "PaginationMeta",
     "PaginatedResponse",
     "StatusResponse",
-    "ErrorResponse", 
+    "ErrorResponse",
     "HealthCheckResponse",
     "SearchFilter",
     "BulkOperationRequest",
@@ -355,7 +355,7 @@ __all__ = [
     "ExportRequest",
     "ExportResponse",
     "NotificationSettings",
-    "UserPreferences", 
+    "UserPreferences",
     "SystemConfiguration",
     "ValidationResult",
     "TimeRange",

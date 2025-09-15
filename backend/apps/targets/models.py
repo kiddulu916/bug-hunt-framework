@@ -18,26 +18,26 @@ class BugBountyPlatform(models.TextChoices):
 
 class Target(models.Model):
     """Target company and bug bounty program information"""
-    
+
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
     target_name = models.CharField(max_length=255, unique=True, help_text="Target company name")
     platform = models.CharField(
-        max_length=20, 
+        max_length=20,
         choices=BugBountyPlatform.choices,
         help_text="Bug bounty platform hosting this program"
     )
     researcher_username = models.CharField(
-        max_length=100, 
+        max_length=100,
         help_text="Your username on the bug bounty platform"
     )
     main_url = models.URLField(max_length=500, help_text="Primary target URL")
     wildcard_url = models.URLField(
-        max_length=500, 
-        blank=True, 
+        max_length=500,
+        blank=True,
         null=True,
         help_text="Wildcard URL if applicable (e.g., *.example.com)"
     )
-    
+
     # Scope Management
     in_scope_urls = ArrayField(
         models.URLField(max_length=500),
@@ -63,7 +63,7 @@ class Target(models.Model):
         blank=True,
         help_text="Other out-of-scope assets"
     )
-    
+
     # Rate Limiting & Request Configuration
     requests_per_second = models.FloatField(
         default=5.0,
@@ -77,7 +77,7 @@ class Target(models.Model):
         default=200,
         help_text="Delay between requests in milliseconds"
     )
-    
+
     # HTTP Configuration
     required_headers = models.JSONField(
         default=dict,
@@ -95,7 +95,7 @@ class Target(models.Model):
         blank=True,
         help_text="Custom User-Agent strings to rotate"
     )
-    
+
     # Program Specific Notes
     program_notes = models.TextField(
         blank=True,
@@ -110,7 +110,7 @@ class Target(models.Model):
         blank=True,
         help_text="Rules for redacting PII in reports"
     )
-    
+
     # Metadata
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
@@ -118,7 +118,7 @@ class Target(models.Model):
         default=True,
         help_text="Whether this target is active for testing"
     )
-    
+
     class Meta:
         db_table = 'targets'
         ordering = ['-created_at']
@@ -127,18 +127,18 @@ class Target(models.Model):
             models.Index(fields=['is_active']),
             models.Index(fields=['target_name']),
         ]
-    
+
     def __str__(self):
         return f"{self.target_name} ({self.get_platform_display()})"
-    
+
     @property
     def total_scan_sessions(self):
         return self.scan_sessions.count()
-    
+
     @property
     def latest_scan_session(self):
         return self.scan_sessions.order_by('-created_at').first()
-    
+
     def get_scope_summary(self):
         """Return a summary of in-scope and out-of-scope items"""
         return {

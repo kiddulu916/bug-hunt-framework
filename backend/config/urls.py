@@ -40,24 +40,24 @@ def api_root(request):
 urlpatterns = [
     # Health check
     path('health/', health_check, name='health-check'),
-    
+
     # Admin interface
     path(f'{settings.ADMIN_URL}', admin.site.urls),
-    
+
     # API root
     path('api/', api_root, name='api-root'),
-    
+
     # API documentation
     path('api/schema/', SpectacularAPIView.as_view(), name='schema'),
     path('api/docs/', SpectacularSwaggerView.as_view(url_name='schema'), name='swagger-ui'),
     path('api/redoc/', SpectacularRedocView.as_view(url_name='schema'), name='redoc'),
-    
+
     # API v1 endpoints
     path('api/v1/vulnerabilities/', include('apps.vulnerabilities.urls')),
     path('api/v1/targets/', include('apps.targets.urls')),
     path('api/v1/scans/', include('apps.scans.urls')),
     path('api/v1/reports/', include('apps.reports.urls')),
-    
+
     # Redirect root to API docs
     path('', RedirectView.as_view(url='/api/docs/', permanent=False)),
 ]
@@ -65,11 +65,11 @@ urlpatterns = [
 # Development-specific URLs
 if settings.DEBUG:
     import debug_toolbar
-    
+
     urlpatterns = [
         path('__debug__/', include(debug_toolbar.urls)),
     ] + urlpatterns
-    
+
     # Silk profiling URLs
     if 'silk' in settings.INSTALLED_APPS:
         urlpatterns += [

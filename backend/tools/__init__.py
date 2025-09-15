@@ -14,34 +14,34 @@ logger = logging.getLogger(__name__)
 def initialize_tools():
     """Initialize and register all available tools"""
     logger.info("Initializing tool framework...")
-    
+
     try:
         # Import all tool modules to trigger registration
         from .passive_recon import subdomain_enum
         from .active_recon import port_scanning
         from .vulnerability_testing import nuclei_scanner
-        
+
         logger.info("Tool modules imported successfully")
-        
+
         # Log available tools
         available_tools = list_tools()
         total_tools = sum(len(tools) for tools in available_tools.values())
-        
-        logger.info(f"Registered {total_tools} tools across {len(available_tools)} categories:")
+
+        logger.info("Registered {total_tools} tools across %s categories:", len(available_tools))
         for category, tools in available_tools.items():
-            logger.info(f"  {category}: {', '.join(tools) if tools else 'none'}")
-        
+            logger.info("  {category}: %s", ', '.join(tools) if tools else 'none')
+
         return True
-        
+
     except Exception as e:
-        logger.error(f"Error initializing tools: {e}")
+        logger.error("Error initializing tools: %s", e)
         return False
 
 
 def get_tool_status():
     """Get status of all registered tools"""
     status = {}
-    
+
     for tool_name, tool in tool_registry._tools.items():
         status[tool_name] = {
             'name': tool.name,
@@ -50,7 +50,7 @@ def get_tool_status():
             'version': tool.get_version(),
             'binary_path': tool.binary_path
         }
-    
+
     return status
 
 

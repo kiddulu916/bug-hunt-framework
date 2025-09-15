@@ -14,10 +14,10 @@ from ..base import BaseTool, ToolConfig, ToolCategory, register_tool
 
 class SubfinderTool(BaseTool):
     """Wrapper for Subfinder - fast subdomain discovery tool"""
-    
+
     def __init__(self):
         super().__init__("subfinder", ToolCategory.PASSIVE_RECON, "subfinder")
-    
+
     def build_command(self, config: ToolConfig) -> List[str]:
         """Build subfinder command"""
         command = [
@@ -27,15 +27,15 @@ class SubfinderTool(BaseTool):
             "-silent",
             "-json"
         ]
-        
+
         # Add rate limiting if specified
         if config.rate_limit:
             command.extend(["-rl", str(int(config.rate_limit))])
-        
+
         # Add threads if specified
         if config.threads:
             command.extend(["-t", str(config.threads)])
-        
+
         # Add custom parameters
         if config.custom_params:
             if config.custom_params.get("all_sources"):
@@ -44,13 +44,13 @@ class SubfinderTool(BaseTool):
                 command.append("-recursive")
             if config.custom_params.get("sources"):
                 command.extend(["-sources", ",".join(config.custom_params["sources"])])
-        
+
         return command
-    
+
     def parse_output(self, stdout: str, stderr: str, output_files: List[str]) -> List[Dict[str, Any]]:
         """Parse subfinder JSON output"""
         results = []
-        
+
         # Parse JSON output from stdout
         for line in stdout.strip().split('\n'):
             if line.strip():
@@ -72,7 +72,7 @@ class SubfinderTool(BaseTool):
                             'source': 'subfinder',
                             'discovered_by': 'subfinder'
                         })
-        
+
         # Also parse output files if JSON parsing failed
         if not results:
             for file_path in output_files:
@@ -89,17 +89,17 @@ class SubfinderTool(BaseTool):
                                         'discovered_by': 'subfinder'
                                     })
                     except Exception as e:
-                        self.logger.error(f"Error reading output file {file_path}: {e}")
-        
+                        self.logger.error("Error reading output file {file_path}: %s", e)
+
         return results
 
 
 class AssetfinderTool(BaseTool):
     """Wrapper for Assetfinder - subdomain enumeration tool"""
-    
+
     def __init__(self):
         super().__init__("assetfinder", ToolCategory.PASSIVE_RECON, "assetfinder")
-    
+
     def build_command(self, config: ToolConfig) -> List[str]:
         """Build assetfinder command"""
         command = [
@@ -107,13 +107,13 @@ class AssetfinderTool(BaseTool):
             "--subs-only",
             config.target
         ]
-        
+
         return command
-    
+
     def parse_output(self, stdout: str, stderr: str, output_files: List[str]) -> List[Dict[str, Any]]:
         """Parse assetfinder output"""
         results = []
-        
+
         for line in stdout.strip().split('\n'):
             subdomain = line.strip()
             if subdomain and '.' in subdomain:
@@ -123,16 +123,16 @@ class AssetfinderTool(BaseTool):
                     'source': 'assetfinder',
                     'discovered_by': 'assetfinder'
                 })
-        
+
         return results
 
 
 class AmassEnumTool(BaseTool):
     """Wrapper for Amass enum - comprehensive subdomain enumeration"""
-    
+
     def __init__(self):
         super().__init__("amass", ToolCategory.PASSIVE_RECON, "amass")
-    
+
     def build_command(self, config: ToolConfig) -> List[str]:
         """Build amass enum command"""
         command = [
@@ -142,20 +142,20 @@ class AmassEnumTool(BaseTool):
             "-o", f"{config.output_dir}/amass_subdomains.txt",
             "-json", f"{config.output_dir}/amass_results.json"
         ]
-        
+
         # Add passive mode for faster execution
         command.append("-passive")
-        
+
         # Add timeout if specified
         if config.timeout:
             command.extend(["-timeout", str(config.timeout // 60)])  # Convert to minutes
-        
+
         return command
-    
+
     def parse_output(self, stdout: str, stderr: str, output_files: List[str]) -> List[Dict[str, Any]]:
         """Parse amass JSON output"""
         results = []
-        
+
         # Parse JSON output file
         for file_path in output_files:
             if 'amass_results.json' in file_path:
@@ -180,8 +180,8 @@ class AmassEnumTool(BaseTool):
                             except json.JSONDecodeError:
                                 continue
                 except Exception as e:
-                    self.logger.error(f"Error reading amass JSON output: {e}")
-        
+                    self.logger.error("Error reading amass JSON output: %s", e)
+
         # Fallback to text output
         if not results:
             for file_path in output_files:
@@ -198,17 +198,17 @@ class AmassEnumTool(BaseTool):
                                         'discovered_by': 'amass'
                                     })
                     except Exception as e:
-                        self.logger.error(f"Error reading amass text output: {e}")
-        
+                        self.logger.error("Error reading amass text output: %s", e)
+
         return results
 
 
 class FindomainTool(BaseTool):
     """Wrapper for Findomain - fast subdomain enumeration"""
-    
+
     def __init__(self):
         super().__init__("findomain", ToolCategory.PASSIVE_RECON, "findomain")
-    
+
     def build_command(self, config: ToolConfig) -> List[str]:
         """Build findomain command"""
         command = [
@@ -217,17 +217,17 @@ class FindomainTool(BaseTool):
             "-o", config.output_dir,
             "-q"  # Quiet mode
         ]
-        
+
         # Add rate limiting
         if config.rate_limit:
             command.extend(["--rate-limit", str(int(config.rate_limit * 1000))])  # Convert to ms
-        
+
         return command
-    
+
     def parse_output(self, stdout: str, stderr: str, output_files: List[str]) -> List[Dict[str, Any]]:
         """Parse findomain output"""
         results = []
-        
+
         # Parse output files
         for file_path in output_files:
             if Path(file_path).suffix == '.txt':
@@ -243,8 +243,8 @@ class FindomainTool(BaseTool):
                                     'discovered_by': 'findomain'
                                 })
                 except Exception as e:
-                    self.logger.error(f"Error reading findomain output: {e}")
-        
+                    self.logger.error("Error reading findomain output: %s", e)
+
         return results
 
 

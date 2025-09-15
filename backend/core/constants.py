@@ -206,13 +206,13 @@ COMMON_CWE_MAPPINGS = {
 
 # Regular expressions for common patterns
 REGEX_PATTERNS = {
-    'email': r'^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,},
-    'url': r'^https?://(?:[-\w.])+(?:\:[0-9]+)?(?:/(?:[\w/_.])*(?:\?(?:[\w&=%.])*)?(?:#(?:[\w.])*)?)?,
-    'ip_address': r'^(?:(?:25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\.){3}(?:25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?),
-    'domain': r'^[a-zA-Z0-9]([a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?(\.[a-zA-Z0-9]([a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?)*,
-    'subdomain': r'^[a-zA-Z0-9]([a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?,
-    'port': r'^(?:[1-9][0-9]{0,3}|[1-5][0-9]{4}|6[0-4][0-9]{3}|65[0-4][0-9]{2}|655[0-2][0-9]|6553[0-5]),
-    'uuid': r'^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12},
+    'email': r'^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}',
+    'url': r'^https?://(?:[-\w.])+(?:\:[0-9]+)?(?:/(?:[\w/_.])*(?:\?(?:[\w&=%.])*)?(?:#(?:[\w.])*)?)?',
+    'ip_address': r'^(?:(?:25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\.){3}(?:25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)',
+    'domain': r'^[a-zA-Z0-9]([a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?(\.[a-zA-Z0-9]([a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?)*',
+    'subdomain': r'^[a-zA-Z0-9]([a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?',
+    'port': r'^(?:[1-9][0-9]{0,3}|[1-5][0-9]{4}|6[0-4][0-9]{3}|65[0-4][0-9]{2}|655[0-2][0-9]|6553[0-5])',
+    'uuid': r'^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}',
 }
 
 # Technology detection patterns
@@ -394,41 +394,41 @@ ERROR_CODES = {
     'TOKEN_EXPIRED': 1002,
     'INVALID_TOKEN': 1003,
     'INSUFFICIENT_PERMISSIONS': 1004,
-    
+
     # Validation errors (1100-1199)
     'INVALID_DATA': 1101,
     'MISSING_REQUIRED_FIELD': 1102,
     'INVALID_FORMAT': 1103,
     'VALUE_OUT_OF_RANGE': 1104,
-    
+
     # Resource errors (1200-1299)
     'RECORD_NOT_FOUND': 1201,
     'DUPLICATE_RECORD': 1202,
     'RESOURCE_LOCKED': 1203,
     'RESOURCE_CONFLICT': 1204,
-    
+
     # Scanning errors (1300-1399)
     'TOOL_NOT_FOUND': 1301,
     'TOOL_EXECUTION_FAILED': 1302,
     'SCAN_TIMEOUT': 1303,
     'CONCURRENT_SCAN_LIMIT': 1304,
     'INVALID_SCAN_CONFIG': 1305,
-    
+
     # Target errors (1400-1499)
     'INVALID_TARGET': 1401,
     'OUT_OF_SCOPE': 1402,
     'TARGET_UNREACHABLE': 1403,
-    
+
     # File errors (1500-1599)
     'FILE_UPLOAD_FAILED': 1501,
     'FILE_TOO_LARGE': 1502,
     'INVALID_FILE_FORMAT': 1503,
     'FILE_PROCESSING_FAILED': 1504,
-    
+
     # Rate limiting (1600-1699)
     'RATE_LIMIT_EXCEEDED': 1601,
     'QUOTA_EXCEEDED': 1602,
-    
+
     # System errors (1700-1799)
     'SYSTEM_ERROR': 1701,
     'DATABASE_ERROR': 1702,

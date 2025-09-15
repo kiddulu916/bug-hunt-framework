@@ -27,8 +27,8 @@ from apps.reports.models import Report
 from apps.scans.models import ScanSession
 from core.pagination import FastAPIPagination
 from core.exceptions import (
-    RecordNotFoundException, 
-    InvalidDataException, 
+    RecordNotFoundException,
+    InvalidDataException,
     ReportGenerationException,
     TemplateNotFoundException
 )
@@ -58,40 +58,40 @@ async def list_reports(
     try:
         # Build query
         query = db.query(Report)
-        
+
         # Apply filters
         if report_type:
             if report_type not in REPORT_TYPES:
                 raise InvalidDataException("report_type", report_type, f"Must be one of: {', '.join(REPORT_TYPES)}")
             query = query.filter(Report.report_type == report_type)
-        
+
         if scan_session_id:
             query = query.filter(Report.scan_session_id == scan_session_id)
-        
+
         if search:
             search_filter = or_(
                 Report.report_name.ilike(f"%{search}%"),
                 Report.executive_summary.ilike(f"%{search}%")
             )
             query = query.filter(search_filter)
-        
+
         # Apply sorting
         sort_field = getattr(Report, sort_by, Report.generated_at)
         if sort_order == "desc":
             query = query.order_by(desc(sort_field))
         else:
             query = query.order_by(asc(sort_field))
-        
+
         # Apply pagination
         pagination = FastAPIPagination(page, page_size)
         result = pagination.paginate_query(query)
-        
+
         # Get report type statistics
         type_stats = db.query(
             Report.report_type,
             func.count(Report.id)
         ).group_by(Report.report_type).all()
-        
+
         return ReportListResponse(
             reports=[ReportResponse.from_orm(report) for report in result['items']],
             pagination=result['pagination'],
@@ -99,9 +99,9 @@ async def list_reports(
                 report_type: count for report_type, count in type_stats
             }
         )
-        
+
     except Exception as e:
-        logger.error(f"Error listing reports: {e}")
+        logger.error("Error listing reports: %s", e)
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail="Failed to retrieve reports"
@@ -122,18 +122,18 @@ async def create_report(
         scan_session = db.query(ScanSession).filter(
             ScanSession.id == report_data.scan_session_id
         ).first()
-        
+
         if not scan_session:
             raise RecordNotFoundException("Scan Session", report_data.scan_session_id)
-        
+
         # Validate report type
         if report_data.report_type not in REPORT_TYPES:
             raise InvalidDataException(
-                "report_type", 
+                "report_type",
                 report_data.report_type,
                 f"Must be one of: {', '.join(REPORT_TYPES)}"
             )
-        
+
         # Create report instance
         db_report = Report(
             scan_session_id=report_data.scan_session_id,
@@ -141,11 +141,11 @@ async def create_report(
             report_type=report_data.report_type,
             generated_by=current_user.get("username", "unknown")
         )
-        
+
         db.add(db_report)
         db.commit()
         db.refresh(db_report)
-        
+
         # Generate report in background
         background_tasks.add_task(
             reporting_service.generate_report,
@@ -153,14 +153,14 @@ async def create_report(
             report_data.template_options,
             current_user.get("user_id")
         )
-        
-        logger.info(f"Created report: {db_report.id}")
-        
+
+        logger.info("Created report: %s", db_report.id)
+
         return ReportResponse.from_orm(db_report)
-        
+
     except Exception as e:
         db.rollback()
-        logger.error(f"Error creating report: {e}")
+        logger.error("Error creating report: %s", e)
         if isinstance(e, HTTPException):
             raise
         raise HTTPException(
@@ -178,10 +178,10 @@ async def get_report(
     Get a specific report by ID.
     """
     report = db.query(Report).filter(Report.id == report_id).first()
-    
+
     if not report:
         raise RecordNotFoundException("Report", report_id)
-    
+
     return ReportResponse.from_orm(report)
 
 @router.put("/{report_id}", response_model=ReportResponse)
@@ -196,25 +196,25 @@ async def update_report(
     """
     try:
         report = db.query(Report).filter(Report.id == report_id).first()
-        
+
         if not report:
             raise RecordNotFoundException("Report", report_id)
-        
+
         # Update fields
         update_data = report_data.dict(exclude_unset=True)
         for field, value in update_data.items():
             setattr(report, field, value)
-        
+
         db.commit()
         db.refresh(report)
-        
-        logger.info(f"Updated report: {report_id}")
-        
+
+        logger.info("Updated report: %s", report_id)
+
         return ReportResponse.from_orm(report)
-        
+
     except Exception as e:
         db.rollback()
-        logger.error(f"Error updating report {report_id}: {e}")
+        logger.error("Error updating report {report_id}: %s", e)
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail="Failed to update report"
@@ -231,21 +231,21 @@ async def delete_report(
     """
     try:
         report = db.query(Report).filter(Report.id == report_id).first()
-        
+
         if not report:
             raise RecordNotFoundException("Report", report_id)
-        
+
         # Delete associated files
         await reporting_service.cleanup_report_files(report)
-        
+
         db.delete(report)
         db.commit()
-        
-        logger.info(f"Deleted report: {report_id}")
-        
+
+        logger.info("Deleted report: %s", report_id)
+
     except Exception as e:
         db.rollback()
-        logger.error(f"Error deleting report {report_id}: {e}")
+        logger.error("Error deleting report {report_id}: %s", e)
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail="Failed to delete report"
@@ -263,10 +263,10 @@ async def download_report(
     """
     try:
         report = db.query(Report).filter(Report.id == report_id).first()
-        
+
         if not report:
             raise RecordNotFoundException("Report", report_id)
-        
+
         # Get file path based on format
         file_path = None
         if format == "pdf" and report.pdf_file_path:
@@ -275,30 +275,30 @@ async def download_report(
             file_path = report.html_file_path
         elif format == "json" and report.json_file_path:
             file_path = report.json_file_path
-        
+
         if not file_path or not os.path.exists(file_path):
             raise HTTPException(
                 status_code=status.HTTP_404_NOT_FOUND,
                 detail=f"Report file not found in {format} format"
             )
-        
+
         # Determine media type
         media_types = {
             "pdf": "application/pdf",
             "html": "text/html",
             "json": "application/json"
         }
-        
+
         filename = f"{report.report_name}_{report.generated_at.strftime('%Y%m%d_%H%M%S')}.{format}"
-        
+
         return FileResponse(
             path=file_path,
             filename=filename,
             media_type=media_types[format]
         )
-        
+
     except Exception as e:
-        logger.error(f"Error downloading report {report_id}: {e}")
+        logger.error("Error downloading report {report_id}: %s", e)
         if isinstance(e, HTTPException):
             raise
         raise HTTPException(
@@ -308,9 +308,9 @@ async def download_report(
 
 @router.post("/{report_id}/regenerate")
 async def regenerate_report(
+    background_tasks: BackgroundTasks,
     report_id: str = Path(..., description="Report ID"),
     template_options: Optional[Dict[str, Any]] = None,
-    background_tasks: BackgroundTasks,
     db: Session = Depends(get_db),
     current_user: dict = Depends(get_current_user)
 ):
@@ -319,13 +319,13 @@ async def regenerate_report(
     """
     try:
         report = db.query(Report).filter(Report.id == report_id).first()
-        
+
         if not report:
             raise RecordNotFoundException("Report", report_id)
-        
+
         # Clean up old report files
         await reporting_service.cleanup_report_files(report)
-        
+
         # Reset report statistics
         report.total_vulnerabilities_reported = 0
         report.critical_count = 0
@@ -335,9 +335,9 @@ async def regenerate_report(
         report.pdf_file_path = None
         report.html_file_path = None
         report.json_file_path = None
-        
+
         db.commit()
-        
+
         # Regenerate report in background
         background_tasks.add_task(
             reporting_service.generate_report,
@@ -345,14 +345,14 @@ async def regenerate_report(
             template_options or {},
             current_user.get("user_id")
         )
-        
-        logger.info(f"Regenerating report: {report_id}")
-        
+
+        logger.info("Regenerating report: %s", report_id)
+
         return {"message": "Report regeneration started"}
-        
+
     except Exception as e:
         db.rollback()
-        logger.error(f"Error regenerating report {report_id}: {e}")
+        logger.error("Error regenerating report {report_id}: %s", e)
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail="Failed to regenerate report"
@@ -373,24 +373,24 @@ async def generate_custom_report(
         scan_sessions = db.query(ScanSession).filter(
             ScanSession.id.in_(generation_request.scan_session_ids)
         ).all()
-        
+
         if len(scan_sessions) != len(generation_request.scan_session_ids):
             raise HTTPException(
                 status_code=status.HTTP_400_BAD_REQUEST,
                 detail="Some scan session IDs were not found"
             )
-        
+
         # Validate report type and template
         if generation_request.report_type not in REPORT_TYPES:
             raise InvalidDataException(
-                "report_type", 
+                "report_type",
                 generation_request.report_type,
                 f"Must be one of: {', '.join(REPORT_TYPES)}"
             )
-        
+
         if generation_request.template_name not in REPORT_TEMPLATES:
             raise TemplateNotFoundException(generation_request.template_name)
-        
+
         # Create report record
         db_report = Report(
             scan_session_id=generation_request.scan_session_ids[0],  # Primary scan
@@ -398,11 +398,11 @@ async def generate_custom_report(
             report_type=generation_request.report_type,
             generated_by=current_user.get("username", "unknown")
         )
-        
+
         db.add(db_report)
         db.commit()
         db.refresh(db_report)
-        
+
         # Generate custom report in background
         background_tasks.add_task(
             reporting_service.generate_custom_report,
@@ -410,17 +410,17 @@ async def generate_custom_report(
             generation_request.dict(),
             current_user.get("user_id")
         )
-        
-        logger.info(f"Started custom report generation: {db_report.id}")
-        
+
+        logger.info("Started custom report generation: %s", db_report.id)
+
         generation_request.report_id = str(db_report.id)
         generation_request.status = "generating"
-        
+
         return generation_request
-        
+
     except Exception as e:
         db.rollback()
-        logger.error(f"Error generating custom report: {e}")
+        logger.error("Error generating custom report: %s", e)
         if isinstance(e, HTTPException):
             raise
         raise HTTPException(
@@ -438,11 +438,11 @@ async def list_report_templates(
     """
     try:
         templates = await reporting_service.get_available_templates(report_type)
-        
+
         return [ReportTemplate(**template) for template in templates]
-        
+
     except Exception as e:
-        logger.error(f"Error listing report templates: {e}")
+        logger.error("Error listing report templates: %s", e)
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail="Failed to list report templates"
@@ -458,14 +458,14 @@ async def get_report_template(
     """
     try:
         template = await reporting_service.get_template_details(template_name)
-        
+
         if not template:
             raise TemplateNotFoundException(template_name)
-        
+
         return ReportTemplate(**template)
-        
+
     except Exception as e:
-        logger.error(f"Error getting report template {template_name}: {e}")
+        logger.error("Error getting report template {template_name}: %s", e)
         if isinstance(e, HTTPException):
             raise
         raise HTTPException(
@@ -486,15 +486,15 @@ async def export_report_data(
     """
     try:
         report = db.query(Report).filter(Report.id == report_id).first()
-        
+
         if not report:
             raise RecordNotFoundException("Report", report_id)
-        
+
         # Export report data
         export_data = await reporting_service.export_report_data(
             report, export_format, include_raw_data
         )
-        
+
         return ReportExport(
             report_id=report_id,
             format=export_format,
@@ -502,9 +502,9 @@ async def export_report_data(
             exported_at=datetime.utcnow(),
             exported_by=current_user.get("username", "unknown")
         )
-        
+
     except Exception as e:
-        logger.error(f"Error exporting report {report_id}: {e}")
+        logger.error("Error exporting report {report_id}: %s", e)
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail="Failed to export report data"
@@ -521,29 +521,29 @@ async def get_report_statistics(
     try:
         # Total reports
         total = db.query(func.count(Report.id)).scalar()
-        
+
         # Report type breakdown
         type_stats = db.query(
             Report.report_type,
             func.count(Report.id)
         ).group_by(Report.report_type).all()
-        
+
         # Recent reports (last 30 days)
         month_ago = datetime.utcnow() - timedelta(days=30)
         recent = db.query(func.count(Report.id)).filter(
             Report.generated_at >= month_ago
         ).scalar()
-        
+
         # PII redaction statistics
         redacted_reports = db.query(func.count(Report.id)).filter(
             Report.pii_redacted == True
         ).scalar()
-        
+
         # Average vulnerabilities per report
         avg_vulns = db.query(
             func.avg(Report.total_vulnerabilities_reported)
         ).scalar()
-        
+
         return {
             "total_reports": total,
             "recent_reports": recent,
@@ -554,9 +554,9 @@ async def get_report_statistics(
             "average_vulnerabilities_per_report": float(avg_vulns) if avg_vulns else 0,
             "redaction_rate": (redacted_reports / total * 100) if total > 0 else 0
         }
-        
+
     except Exception as e:
-        logger.error(f"Error getting report statistics: {e}")
+        logger.error("Error getting report statistics: %s", e)
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail="Failed to get report statistics"
@@ -574,7 +574,7 @@ async def get_report_trends(
     try:
         end_date = datetime.utcnow()
         start_date = end_date - timedelta(days=days)
-        
+
         # Daily report generation
         daily_trends = db.query(
             func.date(Report.generated_at).label('date'),
@@ -584,7 +584,7 @@ async def get_report_trends(
         ).group_by(
             func.date(Report.generated_at)
         ).order_by('date').all()
-        
+
         # Report type trends
         type_trends = db.query(
             func.date(Report.generated_at).label('date'),
@@ -596,7 +596,7 @@ async def get_report_trends(
             func.date(Report.generated_at),
             Report.report_type
         ).order_by('date').all()
-        
+
         return {
             "period": {
                 "start_date": start_date.isoformat(),
@@ -604,7 +604,7 @@ async def get_report_trends(
                 "days": days
             },
             "daily_generation": [
-                {"date": str(date), "count": count} 
+                {"date": str(date), "count": count}
                 for date, count in daily_trends
             ],
             "type_trends": [
@@ -612,9 +612,9 @@ async def get_report_trends(
                 for date, report_type, count in type_trends
             ]
         }
-        
+
     except Exception as e:
-        logger.error(f"Error getting report trends: {e}")
+        logger.error("Error getting report trends: %s", e)
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail="Failed to get report trends"

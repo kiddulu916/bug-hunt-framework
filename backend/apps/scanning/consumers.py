@@ -17,46 +17,46 @@ logger = logging.getLogger(__name__)
 
 class ScanProgressConsumer(AsyncWebsocketConsumer):
     """WebSocket consumer for scan progress updates"""
-    
+
     async def connect(self):
         """Handle WebSocket connection"""
         self.scan_id = self.scope['url_route']['kwargs']['scan_id']
         self.scan_group_name = f'scan_{self.scan_id}'
-        
+
         # Verify scan exists
         scan_exists = await self.verify_scan_exists(self.scan_id)
         if not scan_exists:
             await self.close(code=4004)
             return
-        
+
         # Join scan group
         await self.channel_layer.group_add(
             self.scan_group_name,
             self.channel_name
         )
-        
+
         await self.accept()
-        
+
         # Send initial scan status
         await self.send_scan_status()
-        
-        logger.info(f"WebSocket connected for scan {self.scan_id}")
-    
+
+        logger.info("WebSocket connected for scan %s", self.scan_id)
+
     async def disconnect(self, close_code):
         """Handle WebSocket disconnection"""
         await self.channel_layer.group_discard(
             self.scan_group_name,
             self.channel_name
         )
-        
-        logger.info(f"WebSocket disconnected for scan {self.scan_id} (code: {close_code})")
-    
+
+        logger.info("WebSocket disconnected for scan {self.scan_id} (code: %s)", close_code)
+
     async def receive(self, text_data):
         """Handle messages from WebSocket"""
         try:
             data = json.loads(text_data)
             message_type = data.get('type')
-            
+
             if message_type == 'get_status':
                 await self.send_scan_status()
             elif message_type == 'get_tools':
@@ -72,47 +72,47 @@ class ScanProgressConsumer(AsyncWebsocketConsumer):
                     'type': 'error',
                     'message': f'Unknown message type: {message_type}'
                 }))
-                
+
         except json.JSONDecodeError:
             await self.send(text_data=json.dumps({
                 'type': 'error',
                 'message': 'Invalid JSON format'
             }))
         except Exception as e:
-            logger.error(f"Error handling WebSocket message: {e}")
+            logger.error("Error handling WebSocket message: %s", e)
             await self.send(text_data=json.dumps({
                 'type': 'error',
                 'message': 'Internal server error'
             }))
-    
+
     async def scan_update(self, event):
         """Handle scan update from group"""
         await self.send(text_data=json.dumps({
             'type': 'scan_update',
             'data': event['data']
         }))
-    
+
     async def tool_update(self, event):
         """Handle tool execution update from group"""
         await self.send(text_data=json.dumps({
             'type': 'tool_update',
             'data': event['data']
         }))
-    
+
     async def scan_completed(self, event):
         """Handle scan completion"""
         await self.send(text_data=json.dumps({
             'type': 'scan_completed',
             'data': event['data']
         }))
-    
+
     async def scan_failed(self, event):
         """Handle scan failure"""
         await self.send(text_data=json.dumps({
             'type': 'scan_failed',
             'data': event['data']
         }))
-    
+
     @database_sync_to_async
     def verify_scan_exists(self, scan_id: str) -> bool:
         """Verify that the scan session exists"""
@@ -121,7 +121,7 @@ class ScanProgressConsumer(AsyncWebsocketConsumer):
             return True
         except ObjectDoesNotExist:
             return False
-    
+
     @database_sync_to_async
     def get_scan_data(self) -> Dict[str, Any]:
         """Get current scan session data"""
@@ -150,14 +150,14 @@ class ScanProgressConsumer(AsyncWebsocketConsumer):
             }
         except ObjectDoesNotExist:
             return {}
-    
+
     @database_sync_to_async
     def get_tool_executions(self) -> List[Dict[str, Any]]:
         """Get tool execution data for the scan"""
         try:
             scan = ScanSession.objects.get(id=self.scan_id)
             tools = scan.tool_executions.all().order_by('-created_at')
-            
+
             return [{
                 'id': str(tool.id),
                 'tool_name': tool.tool_name,
@@ -169,10 +169,10 @@ class ScanProgressConsumer(AsyncWebsocketConsumer):
                 'results_count': tool.parsed_results_count,
                 'error_message': tool.error_message
             } for tool in tools]
-            
+
         except ObjectDoesNotExist:
             return []
-    
+
     async def send_scan_status(self):
         """Send current scan status to client"""
         scan_data = await self.get_scan_data()
@@ -181,7 +181,7 @@ class ScanProgressConsumer(AsyncWebsocketConsumer):
                 'type': 'scan_status',
                 'data': scan_data
             }))
-    
+
     async def send_tool_status(self):
         """Send tool execution status to client"""
         tool_data = await self.get_tool_executions()
@@ -189,53 +189,53 @@ class ScanProgressConsumer(AsyncWebsocketConsumer):
             'type': 'tool_status',
             'data': tool_data
         }))
-    
+
     async def pause_scan(self):
         """Pause the scan session"""
         try:
             from .tasks import pause_scan_session
             pause_scan_session.delay(str(self.scan_id))
-            
+
             await self.send(text_data=json.dumps({
                 'type': 'scan_paused',
                 'message': 'Scan pause initiated'
             }))
         except Exception as e:
-            logger.error(f"Error pausing scan: {e}")
+            logger.error("Error pausing scan: %s", e)
             await self.send(text_data=json.dumps({
                 'type': 'error',
                 'message': 'Failed to pause scan'
             }))
-    
+
     async def resume_scan(self):
         """Resume the scan session"""
         try:
             from .tasks import resume_scan_session
             resume_scan_session.delay(str(self.scan_id))
-            
+
             await self.send(text_data=json.dumps({
                 'type': 'scan_resumed',
                 'message': 'Scan resume initiated'
             }))
         except Exception as e:
-            logger.error(f"Error resuming scan: {e}")
+            logger.error("Error resuming scan: %s", e)
             await self.send(text_data=json.dumps({
                 'type': 'error',
                 'message': 'Failed to resume scan'
             }))
-    
+
     async def cancel_scan(self):
         """Cancel the scan session"""
         try:
             from .tasks import cancel_scan_session
             cancel_scan_session.delay(str(self.scan_id))
-            
+
             await self.send(text_data=json.dumps({
                 'type': 'scan_cancelled',
                 'message': 'Scan cancellation initiated'
             }))
         except Exception as e:
-            logger.error(f"Error cancelling scan: {e}")
+            logger.error("Error cancelling scan: %s", e)
             await self.send(text_data=json.dumps({
                 'type': 'error',
                 'message': 'Failed to cancel scan'
@@ -244,46 +244,46 @@ class ScanProgressConsumer(AsyncWebsocketConsumer):
 
 class ToolExecutionConsumer(AsyncWebsocketConsumer):
     """WebSocket consumer for individual tool execution updates"""
-    
+
     async def connect(self):
         """Handle WebSocket connection"""
         self.execution_id = self.scope['url_route']['kwargs']['execution_id']
         self.execution_group_name = f'tool_{self.execution_id}'
-        
+
         # Verify tool execution exists
         execution_exists = await self.verify_execution_exists(self.execution_id)
         if not execution_exists:
             await self.close(code=4004)
             return
-        
+
         # Join execution group
         await self.channel_layer.group_add(
             self.execution_group_name,
             self.channel_name
         )
-        
+
         await self.accept()
-        
+
         # Send initial execution status
         await self.send_execution_status()
-        
-        logger.info(f"WebSocket connected for tool execution {self.execution_id}")
-    
+
+        logger.info("WebSocket connected for tool execution %s", self.execution_id)
+
     async def disconnect(self, close_code):
         """Handle WebSocket disconnection"""
         await self.channel_layer.group_discard(
             self.execution_group_name,
             self.channel_name
         )
-        
-        logger.info(f"WebSocket disconnected for tool execution {self.execution_id}")
-    
+
+        logger.info("WebSocket disconnected for tool execution %s", self.execution_id)
+
     async def receive(self, text_data):
         """Handle messages from WebSocket"""
         try:
             data = json.loads(text_data)
             message_type = data.get('type')
-            
+
             if message_type == 'get_status':
                 await self.send_execution_status()
             elif message_type == 'get_output':
@@ -293,27 +293,27 @@ class ToolExecutionConsumer(AsyncWebsocketConsumer):
                     'type': 'error',
                     'message': f'Unknown message type: {message_type}'
                 }))
-                
+
         except json.JSONDecodeError:
             await self.send(text_data=json.dumps({
                 'type': 'error',
                 'message': 'Invalid JSON format'
             }))
-    
+
     async def execution_update(self, event):
         """Handle execution update from group"""
         await self.send(text_data=json.dumps({
             'type': 'execution_update',
             'data': event['data']
         }))
-    
+
     async def execution_completed(self, event):
         """Handle execution completion"""
         await self.send(text_data=json.dumps({
             'type': 'execution_completed',
             'data': event['data']
         }))
-    
+
     @database_sync_to_async
     def verify_execution_exists(self, execution_id: str) -> bool:
         """Verify that the tool execution exists"""
@@ -322,7 +322,7 @@ class ToolExecutionConsumer(AsyncWebsocketConsumer):
             return True
         except ObjectDoesNotExist:
             return False
-    
+
     @database_sync_to_async
     def get_execution_data(self) -> Dict[str, Any]:
         """Get current tool execution data"""
@@ -346,7 +346,7 @@ class ToolExecutionConsumer(AsyncWebsocketConsumer):
             }
         except ObjectDoesNotExist:
             return {}
-    
+
     async def send_execution_status(self):
         """Send current execution status to client"""
         execution_data = await self.get_execution_data()
@@ -355,7 +355,7 @@ class ToolExecutionConsumer(AsyncWebsocketConsumer):
                 'type': 'execution_status',
                 'data': execution_data
             }))
-    
+
     async def send_tool_output(self):
         """Send tool output to client"""
         try:
@@ -377,34 +377,34 @@ class ToolExecutionConsumer(AsyncWebsocketConsumer):
 
 class NotificationConsumer(AsyncWebsocketConsumer):
     """WebSocket consumer for general notifications"""
-    
+
     async def connect(self):
         """Handle WebSocket connection"""
         self.notification_group_name = 'notifications'
-        
+
         # Join notification group
         await self.channel_layer.group_add(
             self.notification_group_name,
             self.channel_name
         )
-        
+
         await self.accept()
         logger.info("WebSocket connected for notifications")
-    
+
     async def disconnect(self, close_code):
         """Handle WebSocket disconnection"""
         await self.channel_layer.group_discard(
             self.notification_group_name,
             self.channel_name
         )
-        logger.info(f"WebSocket disconnected from notifications (code: {close_code})")
-    
+        logger.info("WebSocket disconnected from notifications (code: %s)", close_code)
+
     async def receive(self, text_data):
         """Handle messages from WebSocket"""
         try:
             data = json.loads(text_data)
             message_type = data.get('type')
-            
+
             if message_type == 'ping':
                 await self.send(text_data=json.dumps({
                     'type': 'pong',
@@ -415,34 +415,34 @@ class NotificationConsumer(AsyncWebsocketConsumer):
                     'type': 'error',
                     'message': f'Unknown message type: {message_type}'
                 }))
-                
+
         except json.JSONDecodeError:
             await self.send(text_data=json.dumps({
                 'type': 'error',
                 'message': 'Invalid JSON format'
             }))
-    
+
     async def notification(self, event):
         """Handle notification from group"""
         await self.send(text_data=json.dumps({
             'type': 'notification',
             'data': event['data']
         }))
-    
+
     async def scan_started(self, event):
         """Handle scan started notification"""
         await self.send(text_data=json.dumps({
             'type': 'scan_started',
             'data': event['data']
         }))
-    
+
     async def scan_completed(self, event):
         """Handle scan completed notification"""
         await self.send(text_data=json.dumps({
             'type': 'scan_completed',
             'data': event['data']
         }))
-    
+
     async def vulnerability_found(self, event):
         """Handle vulnerability found notification"""
         await self.send(text_data=json.dumps({

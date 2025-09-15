@@ -12,7 +12,7 @@ from core.constants import REPORT_TYPES, REPORT_FORMATS, REPORT_TEMPLATES
 
 class ReportBase(BaseModel):
     """Base schema for report data."""
-    
+
     report_name: str = Field(..., min_length=3, max_length=255, description="Report name")
     report_type: str = Field(..., description="Type of report")
     executive_summary: Optional[str] = Field(None, max_length=5000, description="Executive summary")
@@ -29,7 +29,7 @@ class ReportBase(BaseModel):
 
 class ReportCreate(ReportBase):
     """Schema for creating a new report."""
-    
+
     scan_session_id: str = Field(..., description="Scan session ID to generate report for")
     template_name: Optional[str] = Field(None, description="Report template to use")
     template_options: Dict[str, Any] = Field(default_factory=dict, description="Template-specific options")
@@ -69,7 +69,7 @@ class ReportCreate(ReportBase):
 
 class ReportUpdate(BaseModel):
     """Schema for updating report data."""
-    
+
     report_name: Optional[str] = Field(None, min_length=3, max_length=255)
     report_type: Optional[str] = None
     executive_summary: Optional[str] = Field(None, max_length=5000)
@@ -85,7 +85,7 @@ class ReportUpdate(BaseModel):
 
 class ReportResponse(ReportBase):
     """Schema for report response data."""
-    
+
     id: str = Field(..., description="Report ID")
     scan_session_id: str = Field(..., description="Associated scan session ID")
     pdf_file_path: Optional[str] = Field(None, description="Path to PDF report file")
@@ -129,7 +129,7 @@ class ReportResponse(ReportBase):
 
 class ReportListResponse(BaseModel):
     """Schema for paginated report list response."""
-    
+
     reports: List[ReportResponse] = Field(..., description="List of reports")
     pagination: Dict[str, Any] = Field(..., description="Pagination metadata")
     type_counts: Dict[str, int] = Field(default_factory=dict, description="Count by report type")
@@ -157,13 +157,13 @@ class ReportListResponse(BaseModel):
 
 class ReportGeneration(BaseModel):
     """Schema for custom report generation requests."""
-    
+
     report_name: str = Field(..., min_length=3, max_length=255, description="Report name")
     report_type: str = Field(..., description="Report type")
     scan_session_ids: List[str] = Field(..., min_items=1, description="Scan session IDs to include")
     template_name: str = Field(..., description="Template to use")
     output_formats: List[str] = Field(default_factory=lambda: ["pdf"], description="Output formats")
-    
+
     # Content configuration
     include_executive_summary: bool = Field(True, description="Include executive summary")
     include_technical_details: bool = Field(True, description="Include technical details")
@@ -171,24 +171,24 @@ class ReportGeneration(BaseModel):
     include_recommendations: bool = Field(True, description="Include recommendations")
     include_raw_outputs: bool = Field(False, description="Include raw tool outputs")
     include_evidence: bool = Field(True, description="Include vulnerability evidence")
-    
+
     # Filtering options
     severity_filter: Optional[List[str]] = Field(None, description="Include only specified severities")
     vulnerability_types_filter: Optional[List[str]] = Field(None, description="Include only specified vulnerability types")
     verified_only: bool = Field(False, description="Include only verified vulnerabilities")
     exclude_false_positives: bool = Field(True, description="Exclude likely false positives")
-    
+
     # Formatting options
     logo_path: Optional[str] = Field(None, description="Path to company logo")
     company_name: Optional[str] = Field(None, description="Company name for branding")
     report_footer: Optional[str] = Field(None, description="Custom footer text")
     custom_css: Optional[str] = Field(None, description="Custom CSS for HTML reports")
-    
+
     # PII and security
     pii_redaction: bool = Field(True, description="Apply PII redaction")
     redaction_level: str = Field("standard", regex=r'^(minimal|standard|aggressive)$', description="Redaction level")
     watermark_text: Optional[str] = Field(None, description="Watermark text")
-    
+
     # Metadata
     report_id: Optional[str] = Field(None, description="Generated report ID")
     status: Optional[str] = Field(None, description="Generation status")
@@ -236,7 +236,7 @@ class ReportGeneration(BaseModel):
 
 class ReportTemplate(BaseModel):
     """Schema for report templates."""
-    
+
     template_name: str = Field(..., description="Template identifier")
     display_name: str = Field(..., description="Human-readable template name")
     description: str = Field(..., description="Template description")
@@ -276,7 +276,7 @@ class ReportTemplate(BaseModel):
 
 class ReportExport(BaseModel):
     """Schema for report data export."""
-    
+
     report_id: str = Field(..., description="Source report ID")
     format: str = Field(..., regex=r'^(json|xml|csv)$', description="Export format")
     data: Dict[str, Any] = Field(..., description="Exported report data")
@@ -309,7 +309,7 @@ class ReportExport(BaseModel):
 
 class ReportFilter(BaseModel):
     """Schema for report filtering options."""
-    
+
     report_types: Optional[List[str]] = Field(None, description="Filter by report types")
     scan_session_ids: Optional[List[str]] = Field(None, description="Filter by scan session IDs")
     generated_after: Optional[datetime] = Field(None, description="Generated after date")
@@ -337,25 +337,25 @@ class ReportFilter(BaseModel):
     def validate_date_range(cls, values):
         generated_after = values.get('generated_after')
         generated_before = values.get('generated_before')
-        
+
         if generated_after and generated_before and generated_after > generated_before:
             raise ValueError('generated_after must be before generated_before')
-        
+
         return values
 
     @root_validator
     def validate_vulnerability_range(cls, values):
         min_vulns = values.get('min_vulnerabilities')
         max_vulns = values.get('max_vulnerabilities')
-        
+
         if min_vulns is not None and max_vulns is not None and min_vulns > max_vulns:
             raise ValueError('min_vulnerabilities must be less than or equal to max_vulnerabilities')
-        
+
         return values
 
 class ReportStatistics(BaseModel):
     """Schema for report generation statistics."""
-    
+
     total_reports: int = Field(..., ge=0, description="Total number of reports")
     recent_reports: int = Field(..., ge=0, description="Recent reports count")
     type_distribution: Dict[str, int] = Field(..., description="Distribution by report type")
@@ -389,7 +389,7 @@ class ReportStatistics(BaseModel):
 
 class ReportTrends(BaseModel):
     """Schema for report generation trends."""
-    
+
     period: Dict[str, Union[str, int]] = Field(..., description="Analysis period information")
     daily_generation: List[Dict[str, Union[str, int]]] = Field(..., description="Daily report generation counts")
     type_trends: List[Dict[str, Union[str, int]]] = Field(..., description="Report type trends over time")
@@ -398,7 +398,7 @@ class ReportTrends(BaseModel):
 
 class BulkReportOperation(BaseModel):
     """Schema for bulk operations on reports."""
-    
+
     report_ids: List[str] = Field(..., min_items=1, description="List of report IDs")
     operation: str = Field(..., regex=r'^(regenerate|delete|export|update_redaction)', description="Operation to perform")
     parameters: Dict[str, Any] = Field(default_factory=dict, description="Operation-specific parameters")
@@ -420,7 +420,7 @@ class BulkReportOperation(BaseModel):
 
 class ReportSection(BaseModel):
     """Schema for individual report sections."""
-    
+
     section_id: str = Field(..., description="Section identifier")
     title: str = Field(..., min_length=1, max_length=200, description="Section title")
     content: str = Field(..., description="Section content")
@@ -431,7 +431,7 @@ class ReportSection(BaseModel):
 
 class ReportCustomization(BaseModel):
     """Schema for report customization options."""
-    
+
     report_id: str = Field(..., description="Report ID to customize")
     custom_sections: List[ReportSection] = Field(default_factory=list, description="Custom sections to add")
     section_order: List[str] = Field(default_factory=list, description="Custom section ordering")
@@ -441,7 +441,7 @@ class ReportCustomization(BaseModel):
 
 class ReportDelivery(BaseModel):
     """Schema for report delivery configuration."""
-    
+
     report_id: str = Field(..., description="Report ID to deliver")
     delivery_method: str = Field(..., regex=r'^(email|webhook|ftp|api)', description="Delivery method")
     recipients: List[str] = Field(..., min_items=1, description="Delivery recipients")
@@ -459,31 +459,31 @@ class ReportDelivery(BaseModel):
 
 class ReportQuality(BaseModel):
     """Schema for report quality assessment."""
-    
+
     report_id: str = Field(..., description="Report ID")
     quality_score: float = Field(..., ge=0.0, le=10.0, description="Overall quality score")
     completeness_score: float = Field(..., ge=0.0, le=10.0, description="Content completeness score")
     accuracy_score: float = Field(..., ge=0.0, le=10.0, description="Information accuracy score")
     presentation_score: float = Field(..., ge=0.0, le=10.0, description="Presentation quality score")
-    
+
     # Quality indicators
     missing_sections: List[str] = Field(default_factory=list, description="Missing expected sections")
     formatting_issues: List[str] = Field(default_factory=list, description="Formatting problems")
     content_gaps: List[str] = Field(default_factory=list, description="Content gaps identified")
     strengths: List[str] = Field(default_factory=list, description="Report strengths")
     improvement_suggestions: List[str] = Field(default_factory=list, description="Improvement suggestions")
-    
+
     # Metrics
     readability_score: Optional[float] = Field(None, ge=0.0, le=100.0, description="Text readability score")
     word_count: Optional[int] = Field(None, ge=0, description="Total word count")
     page_count: Optional[int] = Field(None, ge=1, description="Total page count")
-    
+
     assessed_at: datetime = Field(default_factory=datetime.utcnow, description="Assessment timestamp")
     assessed_by: Optional[str] = Field(None, description="Quality assessor")
 
 class ReportApproval(BaseModel):
     """Schema for report approval workflow."""
-    
+
     report_id: str = Field(..., description="Report ID")
     approval_status: str = Field(..., regex=r'^(pending|approved|rejected|revision_required)', description="Approval status")
     reviewer: str = Field(..., description="Report reviewer")
@@ -495,13 +495,13 @@ class ReportApproval(BaseModel):
 
 class ReportMetadata(BaseModel):
     """Schema for comprehensive report metadata."""
-    
+
     report_id: str = Field(..., description="Report ID")
     title: str = Field(..., description="Report title")
     version: str = Field("1.0", description="Report version")
     author: str = Field(..., description="Report author")
     reviewers: List[str] = Field(default_factory=list, description="Report reviewers")
-    classification: str = Field("internal", regex=r'^(public|internal|confidential|restricted), description="Security classification")
+    classification: str = Field("internal", regex=r'^(public|internal|confidential|restricted)', description="Security classification")
     tags: List[str] = Field(default_factory=list, description="Report tags")
     related_reports: List[str] = Field(default_factory=list, description="Related report IDs")
     retention_period: Optional[int] = Field(None, ge=1, description="Retention period in days")
@@ -510,7 +510,7 @@ class ReportMetadata(BaseModel):
 
 class ReportValidation(BaseModel):
     """Schema for report validation results."""
-    
+
     is_valid: bool = Field(..., description="Overall validation result")
     validation_errors: List[str] = Field(default_factory=list, description="Validation error messages")
     validation_warnings: List[str] = Field(default_factory=list, description="Validation warnings")
@@ -526,7 +526,7 @@ __all__ = [
     "ReportCreate",
     "ReportUpdate",
     "ReportResponse",
-    "ReportListResponse", 
+    "ReportListResponse",
     "ReportGeneration",
     "ReportTemplate",
     "ReportExport",

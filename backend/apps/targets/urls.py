@@ -24,7 +24,7 @@ urlpatterns = [
 # PUT    /api/targets/{id}/         - Update target (full)
 # PATCH  /api/targets/{id}/         - Update target (partial)
 # DELETE /api/targets/{id}/         - Delete target
-# 
+#
 # Custom endpoints:
 # GET    /api/targets/summary/              - Get targets summary
 # GET    /api/targets/{id}/scope/           - Get target scope

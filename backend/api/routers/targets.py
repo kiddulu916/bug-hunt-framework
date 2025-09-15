@@ -24,8 +24,8 @@ from api.schemas.target import (
 from apps.targets.models import Target, BugBountyPlatform
 from core.pagination import FastAPIPagination
 from core.exceptions import (
-    RecordNotFoundException, 
-    InvalidDataException, 
+    RecordNotFoundException,
+    InvalidDataException,
     InvalidTargetException
 )
 from core.security import InputValidator
@@ -56,7 +56,7 @@ async def list_targets(
     try:
         # Build query
         query = db.query(Target)
-        
+
         # Apply filters
         if platform:
             try:
@@ -64,10 +64,10 @@ async def list_targets(
                 query = query.filter(Target.platform == platform_enum)
             except ValueError:
                 raise InvalidDataException("platform", platform, "Invalid platform value")
-        
+
         if is_active is not None:
             query = query.filter(Target.is_active == is_active)
-        
+
         if search:
             search_filter = or_(
                 Target.target_name.ilike(f"%{search}%"),
@@ -75,24 +75,24 @@ async def list_targets(
                 Target.program_notes.ilike(f"%{search}%")
             )
             query = query.filter(search_filter)
-        
+
         # Apply sorting
         sort_field = getattr(Target, sort_by, Target.created_at)
         if sort_order == "desc":
             query = query.order_by(desc(sort_field))
         else:
             query = query.order_by(asc(sort_field))
-        
+
         # Apply pagination
         pagination = FastAPIPagination(page, page_size)
         result = pagination.paginate_query(query)
-        
+
         # Get platform statistics
         platform_stats = db.query(
             Target.platform,
             func.count(Target.id)
         ).group_by(Target.platform).all()
-        
+
         return TargetListResponse(
             targets=[TargetResponse.from_orm(target) for target in result['items']],
             pagination=result['pagination'],
@@ -101,9 +101,9 @@ async def list_targets(
             },
             total_active=db.query(func.count(Target.id)).filter(Target.is_active == True).scalar()
         )
-        
+
     except Exception as e:
-        logger.error(f"Error listing targets: {e}")
+        logger.error("Error listing targets: %s", e)
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail="Failed to retrieve targets"
@@ -122,44 +122,44 @@ async def create_target(
         # Validate target data
         if not input_validator.validate_url(target_data.main_url):
             raise InvalidDataException("main_url", target_data.main_url, "Invalid URL format")
-        
+
         if not input_validator.validate_target_name(target_data.target_name):
             raise InvalidDataException("target_name", target_data.target_name, "Invalid target name format")
-        
+
         # Check for duplicate target name
         existing_target = db.query(Target).filter(
             Target.target_name == target_data.target_name
         ).first()
-        
+
         if existing_target:
             raise HTTPException(
                 status_code=status.HTTP_409_CONFLICT,
                 detail="Target with this name already exists"
             )
-        
+
         # Validate scope URLs
         scope_validation = target_service.validate_scope(
             target_data.in_scope_urls,
             target_data.out_of_scope_urls
         )
-        
+
         if not scope_validation.is_valid:
             raise InvalidTargetException(f"Invalid scope configuration: {scope_validation.message}")
-        
+
         # Create target instance
         db_target = Target(**target_data.dict())
-        
+
         db.add(db_target)
         db.commit()
         db.refresh(db_target)
-        
-        logger.info(f"Created target: {db_target.id} - {db_target.target_name}")
-        
+
+        logger.info("Created target: {db_target.id} - %s", db_target.target_name)
+
         return TargetResponse.from_orm(db_target)
-        
+
     except Exception as e:
         db.rollback()
-        logger.error(f"Error creating target: {e}")
+        logger.error("Error creating target: %s", e)
         if isinstance(e, HTTPException):
             raise
         raise HTTPException(
@@ -177,10 +177,10 @@ async def get_target(
     Get a specific target by ID.
     """
     target = db.query(Target).filter(Target.id == target_id).first()
-    
+
     if not target:
         raise RecordNotFoundException("Target", target_id)
-    
+
     return TargetResponse.from_orm(target)
 
 @router.put("/{target_id}", response_model=TargetResponse)
@@ -195,20 +195,20 @@ async def update_target(
     """
     try:
         target = db.query(Target).filter(Target.id == target_id).first()
-        
+
         if not target:
             raise RecordNotFoundException("Target", target_id)
-        
+
         # Validate updated data
         update_data = target_data.dict(exclude_unset=True)
-        
+
         if 'main_url' in update_data and not input_validator.validate_url(update_data['main_url']):
             raise InvalidDataException("main_url", update_data['main_url'], "Invalid URL format")
-        
+
         if 'target_name' in update_data:
             if not input_validator.validate_target_name(update_data['target_name']):
                 raise InvalidDataException("target_name", update_data['target_name'], "Invalid target name format")
-            
+
             # Check for duplicate name (excluding current target)
             existing_target = db.query(Target).filter(
                 and_(
@@ -216,37 +216,37 @@ async def update_target(
                     Target.id != target_id
                 )
             ).first()
-            
+
             if existing_target:
                 raise HTTPException(
                     status_code=status.HTTP_409_CONFLICT,
                     detail="Target with this name already exists"
                 )
-        
+
         # Validate scope if updated
         in_scope = update_data.get('in_scope_urls', target.in_scope_urls)
         out_of_scope = update_data.get('out_of_scope_urls', target.out_of_scope_urls)
-        
+
         scope_validation = target_service.validate_scope(in_scope, out_of_scope)
         if not scope_validation.is_valid:
             raise InvalidTargetException(f"Invalid scope configuration: {scope_validation.message}")
-        
+
         # Update fields
         for field, value in update_data.items():
             setattr(target, field, value)
-        
+
         target.updated_at = datetime.utcnow()
-        
+
         db.commit()
         db.refresh(target)
-        
-        logger.info(f"Updated target: {target_id}")
-        
+
+        logger.info("Updated target: %s", target_id)
+
         return TargetResponse.from_orm(target)
-        
+
     except Exception as e:
         db.rollback()
-        logger.error(f"Error updating target {target_id}: {e}")
+        logger.error("Error updating target {target_id}: %s", e)
         if isinstance(e, HTTPException):
             raise
         raise HTTPException(
@@ -265,30 +265,30 @@ async def delete_target(
     """
     try:
         target = db.query(Target).filter(Target.id == target_id).first()
-        
+
         if not target:
             raise RecordNotFoundException("Target", target_id)
-        
+
         # Check if target has associated scan sessions
         from apps.scans.models import ScanSession
         scan_count = db.query(func.count(ScanSession.id)).filter(
             ScanSession.target_id == target_id
         ).scalar()
-        
+
         if scan_count > 0:
             raise HTTPException(
                 status_code=status.HTTP_409_CONFLICT,
                 detail=f"Cannot delete target with {scan_count} associated scan sessions"
             )
-        
+
         db.delete(target)
         db.commit()
-        
-        logger.info(f"Deleted target: {target_id}")
-        
+
+        logger.info("Deleted target: %s", target_id)
+
     except Exception as e:
         db.rollback()
-        logger.error(f"Error deleting target {target_id}: {e}")
+        logger.error("Error deleting target {target_id}: %s", e)
         if isinstance(e, HTTPException):
             raise
         raise HTTPException(
@@ -308,10 +308,10 @@ async def validate_target_scope(
     """
     try:
         target = db.query(Target).filter(Target.id == target_id).first()
-        
+
         if not target:
             raise RecordNotFoundException("Target", target_id)
-        
+
         validation = target_service.validate_asset_scope(
             asset_url,
             target.in_scope_urls,
@@ -319,11 +319,11 @@ async def validate_target_scope(
             target.in_scope_assets,
             target.out_of_scope_assets
         )
-        
+
         return validation
-        
+
     except Exception as e:
-        logger.error(f"Error validating scope for target {target_id}: {e}")
+        logger.error("Error validating scope for target {target_id}: %s", e)
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail="Failed to validate scope"
@@ -340,16 +340,16 @@ async def get_target_configuration(
     """
     try:
         target = db.query(Target).filter(Target.id == target_id).first()
-        
+
         if not target:
             raise RecordNotFoundException("Target", target_id)
-        
+
         config = target_service.generate_scan_configuration(target)
-        
+
         return TargetConfiguration(**config)
-        
+
     except Exception as e:
-        logger.error(f"Error getting configuration for target {target_id}: {e}")
+        logger.error("Error getting configuration for target {target_id}: %s", e)
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail="Failed to get target configuration"
@@ -366,20 +366,20 @@ async def test_target_connectivity(
     """
     try:
         target = db.query(Target).filter(Target.id == target_id).first()
-        
+
         if not target:
             raise RecordNotFoundException("Target", target_id)
-        
+
         connectivity_result = await target_service.test_connectivity(target.main_url)
-        
+
         return {
             "target_id": target_id,
             "url": target.main_url,
             "connectivity": connectivity_result
         }
-        
+
     except Exception as e:
-        logger.error(f"Error testing connectivity for target {target_id}: {e}")
+        logger.error("Error testing connectivity for target {target_id}: %s", e)
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail="Failed to test connectivity"
@@ -396,31 +396,31 @@ async def get_target_statistics(
     """
     try:
         target = db.query(Target).filter(Target.id == target_id).first()
-        
+
         if not target:
             raise RecordNotFoundException("Target", target_id)
-        
+
         from apps.scans.models import ScanSession
         from apps.vulnerabilities.models import Vulnerability
         from apps.recon.models import ReconResult
-        
+
         # Scan statistics
         total_scans = db.query(func.count(ScanSession.id)).filter(
             ScanSession.target_id == target_id
         ).scalar()
-        
+
         completed_scans = db.query(func.count(ScanSession.id)).filter(
             and_(
                 ScanSession.target_id == target_id,
                 ScanSession.status == 'completed'
             )
         ).scalar()
-        
+
         # Vulnerability statistics
         total_vulns = db.query(func.count(Vulnerability.id)).join(
             ScanSession
         ).filter(ScanSession.target_id == target_id).scalar()
-        
+
         critical_vulns = db.query(func.count(Vulnerability.id)).join(
             ScanSession
         ).filter(
@@ -429,12 +429,12 @@ async def get_target_statistics(
                 Vulnerability.severity == 'critical'
             )
         ).scalar()
-        
+
         # Recon statistics
         total_assets = db.query(func.count(ReconResult.id)).join(
             ScanSession
         ).filter(ScanSession.target_id == target_id).scalar()
-        
+
         return {
             "target_id": target_id,
             "target_name": target.target_name,
@@ -455,9 +455,9 @@ async def get_target_statistics(
                 "out_of_scope_assets": len(target.out_of_scope_assets)
             }
         }
-        
+
     except Exception as e:
-        logger.error(f"Error getting statistics for target {target_id}: {e}")
+        logger.error("Error getting statistics for target {target_id}: %s", e)
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail="Failed to get target statistics"
@@ -474,22 +474,22 @@ async def activate_target(
     """
     try:
         target = db.query(Target).filter(Target.id == target_id).first()
-        
+
         if not target:
             raise RecordNotFoundException("Target", target_id)
-        
+
         target.is_active = True
         target.updated_at = datetime.utcnow()
-        
+
         db.commit()
-        
-        logger.info(f"Activated target: {target_id}")
-        
+
+        logger.info("Activated target: %s", target_id)
+
         return {"message": "Target activated successfully"}
-        
+
     except Exception as e:
         db.rollback()
-        logger.error(f"Error activating target {target_id}: {e}")
+        logger.error("Error activating target {target_id}: %s", e)
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail="Failed to activate target"
@@ -506,22 +506,22 @@ async def deactivate_target(
     """
     try:
         target = db.query(Target).filter(Target.id == target_id).first()
-        
+
         if not target:
             raise RecordNotFoundException("Target", target_id)
-        
+
         target.is_active = False
         target.updated_at = datetime.utcnow()
-        
+
         db.commit()
-        
-        logger.info(f"Deactivated target: {target_id}")
-        
+
+        logger.info("Deactivated target: %s", target_id)
+
         return {"message": "Target deactivated successfully"}
-        
+
     except Exception as e:
         db.rollback()
-        logger.error(f"Error deactivating target {target_id}: {e}")
+        logger.error("Error deactivating target {target_id}: %s", e)
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail="Failed to deactivate target"

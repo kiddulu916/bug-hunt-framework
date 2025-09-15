@@ -86,7 +86,7 @@ from .report import (
 __all__ = [
     # Common schemas
     "PaginationMeta",
-    "PaginatedResponse", 
+    "PaginatedResponse",
     "StatusResponse",
     "ErrorResponse",
     "HealthCheckResponse",
@@ -98,7 +98,7 @@ __all__ = [
     "ExportResponse",
     "ValidationResult",
     "TimeRange",
-    
+
     # Vulnerability schemas
     "VulnerabilityCreate",
     "VulnerabilityUpdate",
@@ -111,7 +111,7 @@ __all__ = [
     "ExploitationChain",
     "VulnerabilityStatistics",
     "VulnerabilityTrends",
-    
+
     # Target schemas
     "TargetCreate",
     "TargetUpdate",
@@ -124,7 +124,7 @@ __all__ = [
     "TargetFilter",
     "BulkTargetOperation",
     "TargetExport",
-    
+
     # Scan schemas
     "ScanSessionCreate",
     "ScanSessionUpdate",
@@ -140,7 +140,7 @@ __all__ = [
     "BulkScanOperation",
     "ScanTemplate",
     "ScanExport",
-    
+
     # Report schemas
     "ReportCreate",
     "ReportUpdate",
@@ -153,7 +153,7 @@ __all__ = [
     "ReportStatistics",
     "ReportTrends",
     "BulkReportOperation",
-    
+
     # Schema modules for direct import
     "vulnerability",
     "target",

@@ -20,14 +20,14 @@ from .auth import (
 __all__ = [
     # Database dependencies
     "get_db",
-    "get_db_with_transaction", 
+    "get_db_with_transaction",
     "check_db_health",
-    
+
     # Authentication dependencies
     "get_current_user",
     "get_current_active_user",
     "get_optional_user",
-    
+
     # Permission dependencies
     "require_permissions",
     "require_roles",

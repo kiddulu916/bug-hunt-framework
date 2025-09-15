@@ -107,10 +107,10 @@ __all__ = [
     # Core modules
     "database",
     "security",
-    "pagination", 
+    "pagination",
     "exceptions",
     "constants",
-    
+
     # Database components
     "engine",
     "SessionLocal",
@@ -118,9 +118,9 @@ __all__ = [
     "get_db",
     "get_db_session",
     "DatabaseManager",
-    "db_manager", 
+    "db_manager",
     "check_database_health",
-    
+
     # Security components
     "SecurityManager",
     "security_manager",
@@ -128,7 +128,7 @@ __all__ = [
     "RateLimiter",
     "rate_limiter",
     "log_security_event",
-    
+
     # Pagination components
     "CustomPageNumberPagination",
     "VulnerabilityPagination",
@@ -136,23 +136,23 @@ __all__ = [
     "FastAPIPagination",
     "VulnerabilityFastAPIPagination",
     "ScanFastAPIPagination",
-    
+
     # Base exceptions
     "BugBountyPlatformException",
-    
+
     # Database exceptions
     "DatabaseException",
     "RecordNotFoundException",
-    "DuplicateRecordException", 
+    "DuplicateRecordException",
     "InvalidDataException",
-    
+
     # Authentication exceptions
     "AuthenticationException",
     "InvalidCredentialsException",
     "TokenExpiredException",
     "InvalidTokenException",
     "InsufficientPermissionsException",
-    
+
     # Scanning exceptions
     "ScanningException",
     "ToolNotFoundException",
@@ -160,44 +160,44 @@ __all__ = [
     "InvalidScanConfigurationException",
     "ScanTimeoutException",
     "ConcurrentScanLimitException",
-    
+
     # Target exceptions
     "TargetException",
     "InvalidTargetException",
     "OutOfScopeException",
     "RateLimitException",
-    
+
     # Vulnerability exceptions
     "VulnerabilityException",
     "InvalidVulnerabilityDataException",
     "VulnerabilityProcessingException",
-    
+
     # Report exceptions
     "ReportException",
     "ReportGenerationException",
     "TemplateNotFoundException",
-    
+
     # File handling exceptions
     "FileHandlingException",
     "FileUploadException",
     "FileProcessingException",
     "InvalidFileFormatException",
-    
+
     # External API exceptions
     "ExternalAPIException",
-    "APIRateLimitException", 
+    "APIRateLimitException",
     "APITimeoutException",
     "APIAuthenticationException",
-    
+
     # Exception utilities
     "create_http_exception_from_platform_exception",
     "log_exception",
     "handle_database_error",
-    
+
     # Application constants
     "APP_NAME",
     "APP_VERSION",
-    "API_VERSION", 
+    "API_VERSION",
     "APP_DESCRIPTION",
     "RECON_PHASES",
     "ToolCategory",
@@ -213,7 +213,7 @@ __all__ = [
     "NOTIFICATION_TYPES",
     "STATUS_MESSAGES",
     "ERROR_CODES",
-    
+
     # Core metadata
     "__version__",
     "__title__",
@@ -232,16 +232,16 @@ def get_database_session():
 def validate_input(input_data, validator_type="general"):
     """
     Validate input data using the security manager.
-    
+
     Args:
         input_data: Data to validate
         validator_type: Type of validation to perform
-        
+
     Returns:
         bool: True if valid, False otherwise
     """
     validator = InputValidator()
-    
+
     if validator_type == "email":
         return validator.validate_email(input_data)
     elif validator_type == "url":
@@ -257,39 +257,39 @@ def validate_input(input_data, validator_type="general"):
 def create_paginated_response(items, page, page_size, total_count):
     """
     Create a paginated response using FastAPI pagination.
-    
+
     Args:
         items: List of items for current page
         page: Current page number
         page_size: Items per page
         total_count: Total number of items
-        
+
     Returns:
         dict: Paginated response structure
     """
     pagination = FastAPIPagination(page, page_size)
-    
+
     # Create mock query object for pagination
     class MockQuery:
         def count(self):
             return total_count
-        
+
         def offset(self, offset):
             return self
-            
+
         def limit(self, limit):
             return self
-            
+
         def all(self):
             return items
-    
+
     mock_query = MockQuery()
     return pagination.paginate_query(mock_query, total_count)
 
 def log_platform_event(event_type, message, details=None, level="info"):
     """
     Log platform events with consistent formatting.
-    
+
     Args:
         event_type: Type of event
         message: Event message
@@ -297,7 +297,7 @@ def log_platform_event(event_type, message, details=None, level="info"):
         level: Log level (debug, info, warning, error, critical)
     """
     import logging
-    
+
     logger = logging.getLogger("core.platform")
     log_data = {
         "event_type": event_type,
@@ -305,22 +305,22 @@ def log_platform_event(event_type, message, details=None, level="info"):
         "details": details or {},
         "timestamp": database.datetime.utcnow().isoformat()
     }
-    
+
     if level == "debug":
-        logger.debug(f"{event_type}: {message}", extra=log_data)
+        logger.debug("{event_type}: %s", message, extra=log_data)
     elif level == "warning":
-        logger.warning(f"{event_type}: {message}", extra=log_data)
+        logger.warning("{event_type}: %s", message, extra=log_data)
     elif level == "error":
-        logger.error(f"{event_type}: {message}", extra=log_data)
+        logger.error("{event_type}: %s", message, extra=log_data)
     elif level == "critical":
         logger.critical(f"{event_type}: {message}", extra=log_data)
     else:
-        logger.info(f"{event_type}: {message}", extra=log_data)
+        logger.info("{event_type}: %s", message, extra=log_data)
 
 # Add utility functions to exports
 __all__.extend([
     "get_database_session",
     "validate_input",
-    "create_paginated_response", 
+    "create_paginated_response",
     "log_platform_event",
 ])

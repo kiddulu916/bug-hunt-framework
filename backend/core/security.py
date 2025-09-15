@@ -157,7 +157,7 @@ class SecurityManager:
             payload = jwt.decode(token, self.secret_key, algorithms=[self.algorithm])
             return payload
         except JWTError as e:
-            logger.warning(f"JWT verification failed: {e}")
+            logger.warning("JWT verification failed: %s", e)
             raise HTTPException(
                 status_code=status.HTTP_401_UNAUTHORIZED,
                 detail="Could not validate credentials",
@@ -236,7 +236,7 @@ class SecurityManager:
 
         for pattern in dangerous_patterns:
             if re.search(pattern, input_string, re.IGNORECASE):
-                logger.warning(f"Potential command injection detected: {pattern}")
+                logger.warning("Potential command injection detected: %s", pattern)
                 return False
 
         return True

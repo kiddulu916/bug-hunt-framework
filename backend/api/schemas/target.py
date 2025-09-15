@@ -15,7 +15,7 @@ input_validator = InputValidator()
 
 class TargetBase(BaseModel):
     """Base schema for target data."""
-    
+
     target_name: str = Field(..., min_length=3, max_length=255, description="Target name")
     platform: BugBountyPlatform = Field(..., description="Bug bounty platform")
     researcher_username: str = Field(..., min_length=3, max_length=100, description="Researcher username on platform")
@@ -62,18 +62,18 @@ class TargetBase(BaseModel):
         """Validate that scope configuration is consistent."""
         in_scope_urls = values.get('in_scope_urls', [])
         out_of_scope_urls = values.get('out_of_scope_urls', [])
-        
+
         # Check for overlapping scope definitions
         for in_scope in in_scope_urls:
             for out_scope in out_of_scope_urls:
                 if in_scope == out_scope:
                     raise ValueError(f'URL pattern "{in_scope}" cannot be both in-scope and out-of-scope')
-        
+
         return values
 
 class TargetCreate(TargetBase):
     """Schema for creating a new target."""
-    
+
     class Config:
         schema_extra = {
             "example": {
@@ -116,7 +116,7 @@ class TargetCreate(TargetBase):
 
 class TargetUpdate(BaseModel):
     """Schema for updating target data."""
-    
+
     target_name: Optional[str] = Field(None, min_length=3, max_length=255)
     platform: Optional[BugBountyPlatform] = None
     researcher_username: Optional[str] = Field(None, min_length=3, max_length=100)
@@ -145,7 +145,7 @@ class TargetUpdate(BaseModel):
 
 class TargetResponse(TargetBase):
     """Schema for target response data."""
-    
+
     id: str = Field(..., description="Target ID")
     is_active: bool = Field(True, description="Whether target is active for scanning")
     created_at: datetime = Field(..., description="Creation timestamp")
@@ -158,7 +158,7 @@ class TargetResponse(TargetBase):
                 "id": "12345678-1234-5678-9012-123456789012",
                 "target_name": "Example Corp Bug Bounty",
                 "platform": "hackerone",
-                "researcher_username": "security_researcher", 
+                "researcher_username": "security_researcher",
                 "main_url": "https://example.com",
                 "wildcard_url": "https://*.example.com",
                 "in_scope_urls": [
@@ -179,7 +179,7 @@ class TargetResponse(TargetBase):
 
 class TargetListResponse(BaseModel):
     """Schema for paginated target list response."""
-    
+
     targets: List[TargetResponse] = Field(..., description="List of targets")
     pagination: Dict[str, Any] = Field(..., description="Pagination metadata")
     platform_counts: Dict[str, int] = Field(default_factory=dict, description="Count by platform")
@@ -209,7 +209,7 @@ class TargetListResponse(BaseModel):
 
 class ScopeValidation(BaseModel):
     """Schema for scope validation results."""
-    
+
     asset_url: str = Field(..., description="Asset URL being validated")
     is_valid: bool = Field(..., description="Whether asset is in scope")
     is_in_scope: bool = Field(..., description="Whether asset matches in-scope patterns")
@@ -233,7 +233,7 @@ class ScopeValidation(BaseModel):
 
 class TargetConfiguration(BaseModel):
     """Schema for target scanning configuration."""
-    
+
     target_id: str = Field(..., description="Target ID")
     scan_config: Dict[str, Any] = Field(..., description="Generated scan configuration")
     tool_configs: Dict[str, Dict[str, Any]] = Field(..., description="Tool-specific configurations")
@@ -283,7 +283,7 @@ class TargetConfiguration(BaseModel):
 
 class ConnectivityTest(BaseModel):
     """Schema for target connectivity test results."""
-    
+
     url: HttpUrl = Field(..., description="Tested URL")
     is_reachable: bool = Field(..., description="Whether URL is reachable")
     response_time_ms: Optional[float] = Field(None, description="Response time in milliseconds")
@@ -321,7 +321,7 @@ class ConnectivityTest(BaseModel):
 
 class TargetStatistics(BaseModel):
     """Schema for target statistics."""
-    
+
     target_id: str = Field(..., description="Target ID")
     target_name: str = Field(..., description="Target name")
     scans: Dict[str, Union[int, float]] = Field(..., description="Scan statistics")
@@ -362,7 +362,7 @@ class TargetStatistics(BaseModel):
 
 class TargetFilter(BaseModel):
     """Schema for target filtering options."""
-    
+
     platforms: Optional[List[BugBountyPlatform]] = Field(None, description="Filter by platforms")
     is_active: Optional[bool] = Field(None, description="Filter by active status")
     created_after: Optional[datetime] = Field(None, description="Created after date")
@@ -380,13 +380,13 @@ class TargetFilter(BaseModel):
         created_before = values.get('created_before')
         updated_after = values.get('updated_after')
         updated_before = values.get('updated_before')
-        
+
         if created_after and created_before and created_after > created_before:
             raise ValueError('created_after must be before created_before')
-        
+
         if updated_after and updated_before and updated_after > updated_before:
             raise ValueError('updated_after must be before updated_before')
-        
+
         return values
 
     @root_validator
@@ -394,15 +394,15 @@ class TargetFilter(BaseModel):
         """Validate request rate range."""
         min_rate = values.get('min_request_rate')
         max_rate = values.get('max_request_rate')
-        
+
         if min_rate and max_rate and min_rate > max_rate:
             raise ValueError('min_request_rate must be less than or equal to max_request_rate')
-        
+
         return values
 
 class ScopeRule(BaseModel):
     """Schema for individual scope rule."""
-    
+
     pattern: str = Field(..., min_length=1, description="URL or asset pattern")
     rule_type: str = Field(..., regex=r'^(url|ip|domain|wildcard)', description="Type of scope rule")
     is_inclusive: bool = Field(..., description="True for in-scope, False for out-of-scope")
@@ -411,7 +411,7 @@ class ScopeRule(BaseModel):
 
 class ScopeConfiguration(BaseModel):
     """Schema for comprehensive scope configuration."""
-    
+
     target_id: str = Field(..., description="Target ID")
     rules: List[ScopeRule] = Field(..., description="List of scope rules")
     default_policy: str = Field("deny", regex=r'^(allow|deny)', description="Default policy for unlisted assets")
@@ -420,7 +420,7 @@ class ScopeConfiguration(BaseModel):
 
 class TargetHealth(BaseModel):
     """Schema for target health status."""
-    
+
     target_id: str = Field(..., description="Target ID")
     is_healthy: bool = Field(..., description="Overall health status")
     connectivity_status: str = Field(..., regex=r'^(online|offline|degraded|unknown)', description="Connectivity status")
@@ -431,9 +431,9 @@ class TargetHealth(BaseModel):
 
 class BulkTargetOperation(BaseModel):
     """Schema for bulk operations on targets."""
-    
+
     target_ids: List[str] = Field(..., min_items=1, description="List of target IDs")
-    operation: str = Field(..., regex=r'^(activate|deactivate|update_rate_limit|delete), description="Operation to perform")
+    operation: str = Field(..., regex=r'^(activate|deactivate|update_rate_limit|delete)', description="Operation to perform")
     parameters: Dict[str, Any] = Field(default_factory=dict, description="Operation-specific parameters")
 
     class Config:
@@ -453,9 +453,9 @@ class BulkTargetOperation(BaseModel):
 
 class TargetExport(BaseModel):
     """Schema for target export data."""
-    
+
     targets: List[TargetResponse] = Field(..., description="Targets to export")
-    export_format: str = Field(..., regex=r'^(csv|json|xml), description="Export format")
+    export_format: str = Field(..., regex=r'^(csv|json|xml)', description="Export format")
     include_statistics: bool = Field(False, description="Include target statistics")
     include_scope_rules: bool = Field(True, description="Include detailed scope rules")
     filters: Dict[str, Any] = Field(default_factory=dict, description="Applied filters")
@@ -466,7 +466,7 @@ class TargetExport(BaseModel):
 
 class PlatformIntegration(BaseModel):
     """Schema for bug bounty platform integration settings."""
-    
+
     platform: BugBountyPlatform = Field(..., description="Bug bounty platform")
     api_key: Optional[str] = Field(None, description="API key for platform")
     webhook_url: Optional[HttpUrl] = Field(None, description="Webhook URL for notifications")
@@ -476,7 +476,7 @@ class PlatformIntegration(BaseModel):
 
 class TargetValidation(BaseModel):
     """Schema for target validation results."""
-    
+
     is_valid: bool = Field(..., description="Overall validation result")
     validation_errors: List[str] = Field(default_factory=list, description="Validation error messages")
     validation_warnings: List[str] = Field(default_factory=list, description="Validation warnings")
@@ -488,7 +488,7 @@ class TargetValidation(BaseModel):
 __all__ = [
     "TargetBase",
     "TargetCreate",
-    "TargetUpdate", 
+    "TargetUpdate",
     "TargetResponse",
     "TargetListResponse",
     "ScopeValidation",
