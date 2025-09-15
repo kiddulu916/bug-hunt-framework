@@ -1,0 +1,143 @@
+# Core Framework
+Django==4.2.7
+djangorestframework==3.14.0
+fastapi==0.104.1
+uvicorn[standard]==0.24.0
+gunicorn==21.2.0
+
+# Database & ORM
+sqlalchemy==2.0.23
+alembic==1.12.1
+psycopg2-binary==2.9.9
+asyncpg==0.29.0
+
+# Authentication & Security
+djangorestframework-simplejwt==5.3.0
+python-jose[cryptography]==3.3.0
+passlib[bcrypt]==1.7.4
+python-multipart==0.0.6
+
+# API Documentation
+drf-spectacular==0.26.5
+
+# CORS handling
+django-cors-headers==4.3.1
+
+# Environment variables
+python-dotenv==1.0.0
+django-environ==0.11.2
+
+# Task Queue
+celery==5.3.4
+django-celery-beat==2.5.0
+django-celery-results==2.5.1
+flower==2.0.1
+
+# Redis
+redis==5.0.1
+hiredis==2.2.3
+
+# HTTP clients for scanning tools
+httpx==0.25.2
+requests==2.31.0
+aiohttp==3.9.1
+
+# Data validation and serialization
+pydantic==2.5.0
+marshmallow==3.20.1
+
+# File processing
+python-magic==0.4.27
+Pillow==10.1.0
+
+# PDF generation for reports
+reportlab==4.0.7
+weasyprint==60.2
+
+# Excel file handling
+openpyxl==3.1.2
+xlsxwriter==3.1.9
+
+# Command line tools integration
+subprocess32==3.5.4; python_version < '3.0'
+
+# Networking and domain tools
+dnspython==2.4.2
+python-whois==0.8.0
+ipaddress==1.0.23; python_version < '3.3'
+
+# Vulnerability assessment
+python-nmap==0.7.1
+shodan==1.30.1
+
+# Text processing and parsing
+beautifulsoup4==4.12.2
+lxml==4.9.3
+regex==2023.10.3
+
+# Datetime handling
+python-dateutil==2.8.2
+pytz==2023.3
+
+# Monitoring and logging
+sentry-sdk[django]==1.38.0
+structlog==23.2.0
+django-extensions==3.2.3
+
+# Development and testing
+pytest==7.4.3
+pytest-django==4.7.0
+pytest-asyncio==0.21.1
+pytest-cov==4.1.0
+factory-boy==3.3.0
+faker==20.1.0
+freezegun==1.2.2
+
+# Code quality
+black==23.11.0
+isort==5.12.0
+flake8==6.1.0
+mypy==1.7.1
+
+# Performance monitoring
+django-debug-toolbar==4.2.0
+django-silk==5.0.4
+
+# Email
+django-anymail==10.2
+
+# Caching
+django-redis==5.4.0
+
+# WebSocket support
+channels==4.0.0
+channels-redis==4.1.0
+
+# Health checks
+django-health-check==3.17.0
+
+# Rate limiting
+django-ratelimit==4.1.0
+
+# Background task monitoring
+django-rq==2.8.1
+
+# File uploads
+django-storages==1.14.2
+
+# Utility libraries
+click==8.1.7
+rich==13.7.0
+tqdm==4.66.1
+
+# JSON handling
+orjson==3.9.10
+
+# UUID utilities
+shortuuid==1.0.11
+
+# Cryptography
+cryptography==41.0.7
+
+# Time utilities
+arrow==1.3.0
