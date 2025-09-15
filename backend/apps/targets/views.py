@@ -3,14 +3,15 @@ Target Management API Views
 backend/apps/targets/views.py
 """
 
+import logging
+from datetime import timedelta
 from rest_framework import viewsets, status, permissions
 from rest_framework.decorators import action
 from rest_framework.response import Response
 from rest_framework.filters import SearchFilter, OrderingFilter
 from django_filters.rest_framework import DjangoFilterBackend
-from django.db.models import Count, Q
+from django.db.models import Count
 from django.utils import timezone
-from datetime import timedelta
 
 from .models import Target
 from .serializers import (
@@ -19,6 +20,7 @@ from .serializers import (
 )
 from .filters import TargetFilter
 from .permissions import TargetPermissions
+
 
 class TargetViewSet(viewsets.ModelViewSet):
     """
@@ -31,7 +33,9 @@ class TargetViewSet(viewsets.ModelViewSet):
     - Target validation
     """
 
-    queryset = Target.objects.select_related().prefetch_related('scan_sessions')
+    queryset = Target.objects.select_related().prefetch_related(
+        'scan_sessions'
+    )
     permission_classes = [permissions.IsAuthenticated, TargetPermissions]
     filter_backends = [DjangoFilterBackend, SearchFilter, OrderingFilter]
     filterset_class = TargetFilter
@@ -111,7 +115,9 @@ class TargetViewSet(viewsets.ModelViewSet):
         # Track changes for audit logging
         old_data = TargetSerializer(instance).data
 
-        serializer = self.get_serializer(instance, data=request.data, partial=partial)
+        serializer = self.get_serializer(
+            instance, data=request.data, partial=partial
+        )
         serializer.is_valid(raise_exception=True)
 
         target = serializer.save()
@@ -132,7 +138,9 @@ class TargetViewSet(viewsets.ModelViewSet):
             return Response(serializer.data)
 
         elif request.method == 'PATCH':
-            serializer = TargetScopeSerializer(target, data=request.data, partial=True)
+            serializer = TargetScopeSerializer(
+                target, data=request.data, partial=True
+            )
             serializer.is_valid(raise_exception=True)
             target = serializer.save()
 
@@ -151,7 +159,9 @@ class TargetViewSet(viewsets.ModelViewSet):
             return Response(serializer.data)
 
         elif request.method == 'PATCH':
-            serializer = TargetConfigSerializer(target, data=request.data, partial=True)
+            serializer = TargetConfigSerializer(
+                target, data=request.data, partial=True
+            )
             serializer.is_valid(raise_exception=True)
             target = serializer.save()
 
@@ -207,9 +217,15 @@ class TargetViewSet(viewsets.ModelViewSet):
             'scope_statistics': target.get_scope_summary(),
             'scan_statistics': {
                 'total_sessions': scan_sessions.count(),
-                'completed_sessions': scan_sessions.filter(status='completed').count(),
-                'running_sessions': scan_sessions.filter(status='running').count(),
-                'failed_sessions': scan_sessions.filter(status='failed').count(),
+                'completed_sessions': scan_sessions.filter(
+                    status='completed'
+                ).count(),
+                'running_sessions': scan_sessions.filter(
+                    status='running'
+                ).count(),
+                'failed_sessions': scan_sessions.filter(
+                    status='failed'
+                ).count(),
             },
             'recent_activity': {
                 'last_scan': None,
@@ -329,7 +345,6 @@ class TargetViewSet(viewsets.ModelViewSet):
 
     def _log_target_changes(self, old_data, new_data, user):
         """Log significant changes to targets"""
-        import logging
         logger = logging.getLogger('apps.targets')
 
         # Compare key fields
@@ -338,9 +353,12 @@ class TargetViewSet(viewsets.ModelViewSet):
 
         for field in key_fields:
             if old_data.get(field) != new_data.get(field):
-                changes.append(f"{field}: {old_data.get(field)} -> {new_data.get(field)}")
+                changes.append(
+                    f"{field}: {old_data.get(field)} -> {new_data.get(field)}"
+                )
 
         if changes:
             logger.info(
-                f"Target {new_data['target_name']} updated by {user}: {', '.join(changes)}"
+                f"Target {new_data['target_name']} updated by {user}: "
+                f"{', '.join(changes)}"
             )

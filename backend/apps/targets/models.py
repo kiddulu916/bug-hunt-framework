@@ -6,7 +6,7 @@ backend/apps/targets/models.py
 from django.db import models
 from django.contrib.postgres.fields import ArrayField
 import uuid
-import enum
+
 
 class BugBountyPlatform(models.TextChoices):
     HACKERONE = "hackerone", "HackerOne"
@@ -16,11 +16,16 @@ class BugBountyPlatform(models.TextChoices):
     YESWEHACK = "yeswehack", "YesWeHack"
     PRIVATE = "private", "Private Program"
 
+
 class Target(models.Model):
     """Target company and bug bounty program information"""
 
-    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
-    target_name = models.CharField(max_length=255, unique=True, help_text="Target company name")
+    id = models.UUIDField(
+        primary_key=True, default=uuid.uuid4, editable=False
+    )
+    target_name = models.CharField(
+        max_length=255, unique=True, help_text="Target company name"
+    )
     platform = models.CharField(
         max_length=20,
         choices=BugBountyPlatform.choices,

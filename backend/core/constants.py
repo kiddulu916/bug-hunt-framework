@@ -3,13 +3,14 @@ Application constants for Bug Bounty Automation Platform.
 """
 
 from enum import Enum
-import re
 
 # Application metadata
 APP_NAME = "Bug Bounty Automation Platform"
 APP_VERSION = "1.0.0"
 API_VERSION = "v1"
-APP_DESCRIPTION = "Automated penetration testing and vulnerability management platform"
+APP_DESCRIPTION = (
+    "Automated penetration testing and vulnerability management platform"
+)
 
 # Database constants
 DEFAULT_PAGE_SIZE = 20
@@ -26,9 +27,15 @@ PASSWORD_MAX_LENGTH = 128
 # File upload constants
 MAX_UPLOAD_SIZE_MB = 50
 MAX_UPLOAD_SIZE_BYTES = MAX_UPLOAD_SIZE_MB * 1024 * 1024
-ALLOWED_IMAGE_EXTENSIONS = ['.jpg', '.jpeg', '.png', '.gif', '.bmp', '.webp']
-ALLOWED_DOCUMENT_EXTENSIONS = ['.pdf', '.doc', '.docx', '.txt', '.md']
-ALLOWED_EVIDENCE_EXTENSIONS = ALLOWED_IMAGE_EXTENSIONS + ['.html', '.json', '.xml']
+ALLOWED_IMAGE_EXTENSIONS = [
+    '.jpg', '.jpeg', '.png', '.gif', '.bmp', '.webp'
+]
+ALLOWED_DOCUMENT_EXTENSIONS = [
+    '.pdf', '.doc', '.docx', '.txt', '.md'
+]
+ALLOWED_EVIDENCE_EXTENSIONS = (
+    ALLOWED_IMAGE_EXTENSIONS + ['.html', '.json', '.xml']
+)
 
 # Scanning constants
 DEFAULT_REQUESTS_PER_SECOND = 5.0
@@ -60,6 +67,7 @@ RECON_PHASES = [
     'reporting'
 ]
 
+
 # Tool categories
 class ToolCategory(Enum):
     PASSIVE_RECON = "passive_recon"
@@ -70,6 +78,7 @@ class ToolCategory(Enum):
     VULNERABILITY_SCANNING = "vulnerability_scanning"
     EXPLOITATION = "exploitation"
     POST_EXPLOITATION = "post_exploitation"
+
 
 # Common tool configurations
 TOOL_CONFIGS = {
@@ -133,7 +142,8 @@ INTERESTING_HTTP_CODES = [
 
 # Common ports for scanning
 COMMON_PORTS = [
-    21, 22, 23, 25, 53, 80, 110, 111, 135, 139, 143, 443, 993, 995, 1723, 3306, 3389, 5432, 5900, 8080
+    21, 22, 23, 25, 53, 80, 110, 111, 135, 139, 143, 443, 993, 995,
+    1723, 3306, 3389, 5432, 5900, 8080
 ]
 
 TOP_1000_PORTS = list(range(1, 1001))  # Simplified - in practice, use nmap's top-ports list
@@ -207,7 +217,10 @@ COMMON_CWE_MAPPINGS = {
 # Regular expressions for common patterns
 REGEX_PATTERNS = {
     'email': r'^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}',
-    'url': r'^https?://(?:[-\w.])+(?:\:[0-9]+)?(?:/(?:[\w/_.])*(?:\?(?:[\w&=%.])*)?(?:#(?:[\w.])*)?)?',
+    'url': (
+        r'^https?://(?:[-\w.])+(?:\:[0-9]+)?'
+        r'(?:/(?:[\w/_.])*(?:\?(?:[\w&=%.])*)?(?:#(?:[\w.])*)?)?'
+    ),
     'ip_address': r'^(?:(?:25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\.){3}(?:25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)',
     'domain': r'^[a-zA-Z0-9]([a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?(\.[a-zA-Z0-9]([a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?)*',
     'subdomain': r'^[a-zA-Z0-9]([a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?',
@@ -440,7 +453,9 @@ SECURITY_HEADERS = {
     'X-Content-Type-Options': 'nosniff',
     'X-Frame-Options': 'DENY',
     'X-XSS-Protection': '1; mode=block',
-    'Strict-Transport-Security': 'max-age=31536000; includeSubDomains',
+    'Strict-Transport-Security': (
+        'max-age=31536000; includeSubDomains'
+    ),
     'Content-Security-Policy': "default-src 'self'",
     'Referrer-Policy': 'strict-origin-when-cross-origin',
 }
@@ -449,7 +464,10 @@ SECURITY_HEADERS = {
 LOG_FORMATS = {
     'simple': '%(levelname)s %(message)s',
     'detailed': '%(asctime)s %(name)s %(levelname)s %(message)s',
-    'json': '{"timestamp": "%(asctime)s", "level": "%(levelname)s", "logger": "%(name)s", "message": "%(message)s"}',
+    'json': (
+        '{"timestamp": "%(asctime)s", "level": "%(levelname)s", '
+        '"logger": "%(name)s", "message": "%(message)s"}'
+    ),
 }
 
 # Environment types

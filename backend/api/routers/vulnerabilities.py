@@ -21,7 +21,8 @@ from api.schemas.vulnerability import (
     VulnerabilityAnalysis,
     BulkVulnerabilityOperation,
     VulnerabilityExport,
-    VulnerabilityFilter
+    VulnerabilityFilter,
+    VulnerabilityQueryFilters
 )
 from apps.vulnerabilities.models import Vulnerability, VulnSeverity, ExploitationChain
 from core.pagination import VulnerabilityFastAPIPagination
@@ -42,16 +43,7 @@ evidence_handler = EvidenceHandler()
 
 @router.get("/", response_model=VulnerabilityListResponse)
 async def list_vulnerabilities(
-    page: int = Query(1, ge=1, description="Page number"),
-    page_size: int = Query(20, ge=1, le=100, description="Items per page"),
-    severity: Optional[str] = Query(None, description="Filter by severity"),
-    vulnerability_type: Optional[str] = Query(None, description="Filter by vulnerability type"),
-    status: Optional[str] = Query(None, description="Filter by verification status"),
-    target_id: Optional[str] = Query(None, description="Filter by target ID"),
-    scan_session_id: Optional[str] = Query(None, description="Filter by scan session ID"),
-    search: Optional[str] = Query(None, description="Search in vulnerability names and descriptions"),
-    sort_by: str = Query("discovered_at", description="Sort field"),
-    sort_order: str = Query("desc", regex="^(asc|desc)$", description="Sort order"),
+    filters: VulnerabilityQueryFilters = Depends(),
     db: Session = Depends(get_db),
     current_user: dict = Depends(get_current_user)
 ):
@@ -63,48 +55,48 @@ async def list_vulnerabilities(
         query = db.query(Vulnerability)
 
         # Apply filters
-        if severity:
+        if filters.severity:
             try:
-                severity_enum = VulnSeverity(severity.lower())
+                severity_enum = VulnSeverity(filters.severity.lower())
                 query = query.filter(Vulnerability.severity == severity_enum)
             except ValueError:
-                raise InvalidDataException("severity", severity, "Invalid severity value")
+                raise InvalidDataException("severity", filters.severity, "Invalid severity value")
 
-        if vulnerability_type:
-            query = query.filter(Vulnerability.vulnerability_type == vulnerability_type)
+        if filters.vulnerability_type:
+            query = query.filter(Vulnerability.vulnerability_type == filters.vulnerability_type)
 
-        if status:
-            if status == "verified":
+        if filters.status:
+            if filters.status == "verified":
                 query = query.filter(Vulnerability.manually_verified == True)
-            elif status == "unverified":
+            elif filters.status == "unverified":
                 query = query.filter(Vulnerability.manually_verified == False)
 
-        if target_id:
+        if filters.target_id:
             query = query.join(Vulnerability.scan_session).filter(
-                Vulnerability.scan_session.has(target_id=target_id)
+                Vulnerability.scan_session.has(target_id=filters.target_id)
             )
 
-        if scan_session_id:
-            query = query.filter(Vulnerability.scan_session_id == scan_session_id)
+        if filters.scan_session_id:
+            query = query.filter(Vulnerability.scan_session_id == filters.scan_session_id)
 
-        if search:
+        if filters.search:
             search_filter = or_(
-                Vulnerability.vulnerability_name.ilike(f"%{search}%"),
-                Vulnerability.impact_description.ilike(f"%{search}%"),
-                Vulnerability.affected_url.ilike(f"%{search}%")
+                Vulnerability.vulnerability_name.ilike(f"%{filters.search}%"),
+                Vulnerability.impact_description.ilike(f"%{filters.search}%"),
+                Vulnerability.affected_url.ilike(f"%{filters.search}%")
             )
             query = query.filter(search_filter)
 
         # Apply sorting
-        sort_field = getattr(Vulnerability, sort_by, Vulnerability.discovered_at)
-        if sort_order == "desc":
+        sort_field = getattr(Vulnerability, filters.sort_by, Vulnerability.discovered_at)
+        if filters.sort_order == "desc":
             query = query.order_by(desc(sort_field))
         else:
             query = query.order_by(asc(sort_field))
 
         # Apply pagination
-        pagination = VulnerabilityFastAPIPagination(page, page_size)
-        result = pagination.paginate_vulnerabilities(query, severity)
+        pagination = VulnerabilityFastAPIPagination(filters.page, filters.page_size)
+        result = pagination.paginate_vulnerabilities(query, filters.severity)
 
         return VulnerabilityListResponse(
             vulnerabilities=[VulnerabilityResponse.from_orm(vuln) for vuln in result['items']],

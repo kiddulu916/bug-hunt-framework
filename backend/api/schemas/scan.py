@@ -628,4 +628,18 @@ __all__ = [
     "ScanExport",
     "ScanValidation",
     "ScanMetrics",
+    "ScanQueryFilters",
 ]
+
+class ScanQueryFilters(BaseModel):
+    """Query filters for scan session listing."""
+    
+    page: int = Field(1, ge=1, description="Page number")
+    page_size: int = Field(20, ge=1, le=100, description="Items per page")
+    status: Optional[str] = Field(None, description="Filter by scan status")
+    target_id: Optional[str] = Field(None, description="Filter by target ID")
+    scan_type: Optional[str] = Field(None, description="Filter by scan type")
+    created_by: Optional[str] = Field(None, description="Filter by creator")
+    search: Optional[str] = Field(None, description="Search in scan names")
+    sort_by: str = Field("created_at", description="Sort field")
+    sort_order: str = Field("desc", regex=r'^(asc|desc)$', description="Sort order")

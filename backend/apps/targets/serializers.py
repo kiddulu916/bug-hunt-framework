@@ -6,8 +6,9 @@ backend/apps/targets/serializers.py
 from rest_framework import serializers
 from django.core.validators import URLValidator
 from django.core.exceptions import ValidationError
-from .models import Target, BugBountyPlatform
+from .models import Target
 import re
+
 
 class TargetSerializer(serializers.ModelSerializer):
     """Serializer for Target model with validation"""
@@ -51,12 +52,15 @@ class TargetSerializer(serializers.ModelSerializer):
     def validate_target_name(self, value):
         """Validate target name"""
         if len(value.strip()) < 2:
-            raise serializers.ValidationError("Target name must be at least 2 characters")
+            raise serializers.ValidationError(
+                "Target name must be at least 2 characters"
+            )
 
         # Check for invalid characters
         if not re.match(r'^[a-zA-Z0-9\s\-_.]+$', value):
             raise serializers.ValidationError(
-                "Target name can only contain letters, numbers, spaces, hyphens, underscores, and periods"
+                "Target name can only contain letters, numbers, spaces, "
+                "hyphens, underscores, and periods"
             )
 
         return value.strip()
@@ -71,7 +75,9 @@ class TargetSerializer(serializers.ModelSerializer):
 
         # Ensure URL has scheme
         if not value.startswith(('http://', 'https://')):
-            raise serializers.ValidationError("URL must start with http:// or https://")
+            raise serializers.ValidationError(
+                "URL must start with http:// or https://"
+            )
 
         return value
 
@@ -82,31 +88,43 @@ class TargetSerializer(serializers.ModelSerializer):
             if value.startswith('*.'):
                 domain_part = value[2:]
                 if not re.match(r'^[a-zA-Z0-9.-]+$', domain_part):
-                    raise serializers.ValidationError("Invalid wildcard domain format")
+                    raise serializers.ValidationError(
+                        "Invalid wildcard domain format"
+                    )
             else:
                 # Regular URL validation
                 url_validator = URLValidator()
                 try:
                     url_validator(value)
                 except ValidationError:
-                    raise serializers.ValidationError("Invalid wildcard URL format")
+                    raise serializers.ValidationError(
+                        "Invalid wildcard URL format"
+                    )
 
         return value
 
     def validate_requests_per_second(self, value):
         """Validate rate limiting configuration"""
         if value <= 0:
-            raise serializers.ValidationError("Requests per second must be positive")
+            raise serializers.ValidationError(
+                "Requests per second must be positive"
+            )
         if value > 100:
-            raise serializers.ValidationError("Requests per second should not exceed 100")
+            raise serializers.ValidationError(
+                "Requests per second should not exceed 100"
+            )
         return value
 
     def validate_concurrent_requests(self, value):
         """Validate concurrent requests limit"""
         if value <= 0:
-            raise serializers.ValidationError("Concurrent requests must be positive")
+            raise serializers.ValidationError(
+                "Concurrent requests must be positive"
+            )
         if value > 50:
-            raise serializers.ValidationError("Concurrent requests should not exceed 50")
+            raise serializers.ValidationError(
+                "Concurrent requests should not exceed 50"
+            )
         return value
 
     def validate_in_scope_urls(self, value):
@@ -119,7 +137,9 @@ class TargetSerializer(serializers.ModelSerializer):
             try:
                 url_validator(url)
             except ValidationError:
-                raise serializers.ValidationError(f"Invalid URL in scope: {url}")
+                raise serializers.ValidationError(
+                    f"Invalid URL in scope: {url}"
+                )
 
         return value
 
@@ -133,20 +153,28 @@ class TargetSerializer(serializers.ModelSerializer):
             try:
                 url_validator(url)
             except ValidationError:
-                raise serializers.ValidationError(f"Invalid URL in out-of-scope: {url}")
+                raise serializers.ValidationError(
+                    f"Invalid URL in out-of-scope: {url}"
+                )
 
         return value
 
     def validate_user_agents(self, value):
         """Validate user agent strings"""
         if not isinstance(value, list):
-            raise serializers.ValidationError("Must be a list of user agent strings")
+            raise serializers.ValidationError(
+                "Must be a list of user agent strings"
+            )
 
         for ua in value:
             if not isinstance(ua, str) or len(ua.strip()) == 0:
-                raise serializers.ValidationError("Each user agent must be a non-empty string")
+                raise serializers.ValidationError(
+                    "Each user agent must be a non-empty string"
+                )
             if len(ua) > 500:
-                raise serializers.ValidationError("User agent string too long (max 500 characters)")
+                raise serializers.ValidationError(
+                    "User agent string too long (max 500 characters)"
+                )
 
         return value
 
@@ -159,7 +187,10 @@ class TargetSerializer(serializers.ModelSerializer):
         overlap = in_scope.intersection(out_of_scope)
         if overlap:
             raise serializers.ValidationError({
-                'non_field_errors': [f"URLs cannot be both in-scope and out-of-scope: {', '.join(overlap)}"]
+                'non_field_errors': [
+                    f"URLs cannot be both in-scope and out-of-scope: "
+                    f"{', '.join(overlap)}"
+                ]
             })
 
         # Validate rate limiting makes sense
@@ -172,12 +203,15 @@ class TargetSerializer(serializers.ModelSerializer):
         if rps > max_theoretical_rps:
             raise serializers.ValidationError({
                 'requests_per_second': [
-                    f"Requests per second ({rps}) is too high for given delay ({delay_ms}ms) "
-                    f"and concurrent requests ({concurrent}). Maximum theoretical: {max_theoretical_rps:.2f}"
+                    f"Requests per second ({rps}) is too high for given "
+                    f"delay ({delay_ms}ms) and concurrent requests "
+                    f"({concurrent}). Maximum theoretical: "
+                    f"{max_theoretical_rps:.2f}"
                 ]
             })
 
         return data
+
 
 class TargetCreateSerializer(TargetSerializer):
     """Serializer for creating targets with required fields"""
@@ -192,6 +226,7 @@ class TargetCreateSerializer(TargetSerializer):
             'special_requirements', 'pii_redaction_rules', 'is_active'
         ]
 
+
 class TargetUpdateSerializer(TargetSerializer):
     """Serializer for updating targets (partial updates allowed)"""
 
@@ -200,6 +235,7 @@ class TargetUpdateSerializer(TargetSerializer):
         # Make all fields optional for partial updates
         for field in self.fields.values():
             field.required = False
+
 
 class TargetSummarySerializer(serializers.ModelSerializer):
     """Lightweight serializer for target summaries"""
@@ -213,6 +249,7 @@ class TargetSummarySerializer(serializers.ModelSerializer):
             'id', 'target_name', 'platform', 'platform_display',
             'main_url', 'is_active', 'created_at', 'scan_count'
         ]
+
 
 class TargetScopeSerializer(serializers.ModelSerializer):
     """Serializer focused on scope management"""
@@ -228,6 +265,7 @@ class TargetScopeSerializer(serializers.ModelSerializer):
 
     def get_scope_summary(self, obj):
         return obj.get_scope_summary()
+
 
 class TargetConfigSerializer(serializers.ModelSerializer):
     """Serializer for target configuration settings"""

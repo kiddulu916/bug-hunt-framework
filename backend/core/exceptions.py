@@ -4,10 +4,11 @@ Custom exceptions for Bug Bounty Automation Platform.
 
 from typing import Optional, Dict, Any
 from fastapi import HTTPException, status
-from django.core.exceptions import ValidationError as DjangoValidationError
+from django.core.exceptions import ValidationError
 import logging
 
 logger = logging.getLogger(__name__)
+
 
 # Base exceptions
 
@@ -30,11 +31,13 @@ class BugBountyPlatformException(Exception):
     def __str__(self):
         return f"{self.error_code}: {self.message}" if self.error_code else self.message
 
+
 # Database exceptions
 
 class DatabaseException(BugBountyPlatformException):
     """Base exception for database-related errors."""
     pass
+
 
 class RecordNotFoundException(DatabaseException):
     """Raised when a requested record is not found."""
@@ -43,12 +46,14 @@ class RecordNotFoundException(DatabaseException):
         message = f"{model_name} with identifier '{identifier}' not found"
         super().__init__(message, "RECORD_NOT_FOUND", {"model": model_name, "id": identifier})
 
+
 class DuplicateRecordException(DatabaseException):
     """Raised when attempting to create a duplicate record."""
 
     def __init__(self, model_name: str, field: str, value: Any):
         message = f"{model_name} with {field}='{value}' already exists"
         super().__init__(message, "DUPLICATE_RECORD", {"model": model_name, "field": field, "value": value})
+
 
 class InvalidDataException(DatabaseException):
     """Raised when data validation fails."""
@@ -57,11 +62,13 @@ class InvalidDataException(DatabaseException):
         message = f"Invalid value for field '{field}': {reason}"
         super().__init__(message, "INVALID_DATA", {"field": field, "value": value, "reason": reason})
 
+
 # Authentication and authorization exceptions
 
 class AuthenticationException(BugBountyPlatformException):
     """Base exception for authentication errors."""
     pass
+
 
 class InvalidCredentialsException(AuthenticationException):
     """Raised when login credentials are invalid."""
@@ -72,6 +79,7 @@ class InvalidCredentialsException(AuthenticationException):
             "INVALID_CREDENTIALS"
         )
 
+
 class TokenExpiredException(AuthenticationException):
     """Raised when JWT token has expired."""
 
@@ -80,6 +88,7 @@ class TokenExpiredException(AuthenticationException):
             "Token has expired",
             "TOKEN_EXPIRED"
         )
+
 
 class InvalidTokenException(AuthenticationException):
     """Raised when JWT token is malformed or invalid."""

@@ -8,6 +8,7 @@ from django.contrib.postgres.fields import ArrayField
 from apps.scanning.models import ScanSession
 import uuid
 
+
 class VulnSeverity(models.TextChoices):
     CRITICAL = "critical", "Critical"
     HIGH = "high", "High"
@@ -15,11 +16,13 @@ class VulnSeverity(models.TextChoices):
     LOW = "low", "Low"
     INFO = "info", "Info"
 
+
 class ExploitationDifficulty(models.TextChoices):
     EASY = "easy", "Easy"
     MEDIUM = "medium", "Medium"
     HARD = "hard", "Hard"
     UNKNOWN = "unknown", "Unknown"
+
 
 class RemediationPriority(models.TextChoices):
     IMMEDIATE = "immediate", "Immediate"
@@ -27,6 +30,7 @@ class RemediationPriority(models.TextChoices):
     MEDIUM = "medium", "Medium"
     LOW = "low", "Low"
     INFO_ONLY = "info_only", "Info Only"
+
 
 class Vulnerability(models.Model):
     """Discovered vulnerabilities and security issues"""
@@ -241,6 +245,7 @@ class Vulnerability(models.Model):
             'exploitable': queryset.filter(is_exploitable=True).count(),
         }
 
+
 class ExploitationChain(models.Model):
     """Vulnerability chains for maximum impact exploitation"""
 
@@ -276,7 +281,7 @@ class ExploitationChain(models.Model):
         help_text="Payload used in this step"
     )
     expected_result = models.TextField(
-      blank=True,
+        blank=True,
         help_text="Expected result from this step"
     )
     actual_result = models.TextField(
@@ -309,7 +314,8 @@ class ExploitationChain(models.Model):
     impact_increase = models.CharField(
         max_length=50,
         blank=True,
-        help_text="How much this step increases impact (none, low, medium, high)"
+        help_text="How much this step increases impact "
+        "(none, low, medium, high)"
     )
     final_impact_description = models.TextField(
         blank=True,
@@ -318,6 +324,8 @@ class ExploitationChain(models.Model):
 
     # Metadata
     executed_at = models.DateTimeField(auto_now_add=True)
+
+    """Meta class for ExploitationChain"""
 
     class Meta:
         db_table = 'exploitation_chains'

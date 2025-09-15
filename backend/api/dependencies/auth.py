@@ -21,6 +21,7 @@ logger = logging.getLogger(__name__)
 # Security scheme for extracting Bearer tokens
 security = HTTPBearer(auto_error=False)
 
+
 async def get_current_user(
     request: Request,
     credentials: Optional[HTTPAuthorizationCredentials] = Depends(security)
@@ -120,6 +121,7 @@ async def get_current_user(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail="Authentication service error"
         ) from e
+
 
 async def get_current_active_user(
     current_user: dict = Depends(get_current_user)

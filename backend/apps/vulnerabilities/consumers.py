@@ -41,7 +41,9 @@ class VulnerabilityConsumer(AsyncWebsocketConsumer):
         # Send initial vulnerability data
         await self.send_vulnerability_summary()
 
-        logger.info("WebSocket connected for vulnerabilities in scan %s", self.scan_id)
+        logger.info(
+            "WebSocket connected for vulnerabilities in scan %s", self.scan_id
+        )
 
     async def disconnect(self, close_code):
         """Handle WebSocket disconnection"""
@@ -50,7 +52,9 @@ class VulnerabilityConsumer(AsyncWebsocketConsumer):
             self.channel_name
         )
 
-        logger.info("WebSocket disconnected from vulnerabilities (code: %s)", close_code)
+        logger.info(
+            "WebSocket disconnected from vulnerabilities (code: %s)", close_code
+        )
 
     async def receive(self, text_data):
         """Handle messages from WebSocket"""
@@ -126,14 +130,28 @@ class VulnerabilityConsumer(AsyncWebsocketConsumer):
                 'scan_name': scan.session_name,
                 'total_vulnerabilities': vulnerabilities.count(),
                 'by_severity': {
-                    'critical': vulnerabilities.filter(severity='critical').count(),
-                    'high': vulnerabilities.filter(severity='high').count(),
-                    'medium': vulnerabilities.filter(severity='medium').count(),
-                    'low': vulnerabilities.filter(severity='low').count(),
-                    'info': vulnerabilities.filter(severity='info').count(),
+                    'critical': vulnerabilities.filter(
+                    severity='critical'
+                ).count(),
+                    'high': vulnerabilities.filter(
+                    severity='high'
+                ).count(),
+                    'medium': vulnerabilities.filter(
+                    severity='medium'
+                ).count(),
+                    'low': vulnerabilities.filter(
+                    severity='low'
+                ).count(),
+                    'info': vulnerabilities.filter(
+                    severity='info'
+                ).count(),
                 },
-                'verified_count': vulnerabilities.filter(manually_verified=True).count(),
-                'exploitable_count': vulnerabilities.filter(is_exploitable=True).count(),
+                'verified_count': vulnerabilities.filter(
+                    manually_verified=True
+                ).count(),
+                'exploitable_count': vulnerabilities.filter(
+                    is_exploitable=True
+                ).count(),
                 'latest_vulnerability': None
             }
 
@@ -185,10 +203,14 @@ class VulnerabilityConsumer(AsyncWebsocketConsumer):
     def get_vulnerability_details(self, vuln_id: str) -> Dict[str, Any]:
         """Get detailed information for a specific vulnerability"""
         try:
-            vuln = Vulnerability.objects.select_related('scan_session').get(id=vuln_id)
+            vuln = Vulnerability.objects.select_related(
+                'scan_session'
+            ).get(id=vuln_id)
 
             # Get exploitation chains
-            chains = ExploitationChain.objects.filter(vulnerability=vuln).order_by('step_number')
+            chains = ExploitationChain.objects.filter(
+                vulnerability=vuln
+            ).order_by('step_number')
 
             chain_data = []
             for chain in chains:

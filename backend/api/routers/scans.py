@@ -21,7 +21,8 @@ from api.schemas.scan import (
     ScanConfiguration,
     ScanProgress,
     ScanResults,
-    ToolExecutionResponse
+    ToolExecutionResponse,
+    ScanQueryFilters
 )
 from apps.scans.models import ScanSession, ScanStatus, ToolExecution, ToolStatus
 from apps.targets.models import Target

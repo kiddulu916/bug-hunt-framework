@@ -7,5 +7,8 @@ from django.urls import path
 from . import consumers
 
 websocket_urlpatterns = [
-    path('ws/vulnerabilities/<uuid:scan_id>/', consumers.VulnerabilityConsumer.as_asgi()),
+    path(
+        'ws/vulnerabilities/<uuid:scan_id>/',
+        consumers.VulnerabilityConsumer.as_asgi()
+    ),
 ]
