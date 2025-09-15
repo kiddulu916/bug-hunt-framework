@@ -185,8 +185,8 @@ async def get_target(
 
 @router.put("/{target_id}", response_model=TargetResponse)
 async def update_target(
-    target_id: str = Path(..., description="Target ID"),
     target_data: TargetUpdate,
+    target_id: str = Path(..., description="Target ID"),
     db: Session = Depends(get_db),
     current_user: dict = Depends(get_current_user)
 ):

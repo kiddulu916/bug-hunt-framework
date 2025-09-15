@@ -404,7 +404,7 @@ class ScopeRule(BaseModel):
     """Schema for individual scope rule."""
     
     pattern: str = Field(..., min_length=1, description="URL or asset pattern")
-    rule_type: str = Field(..., regex=r'^(url|ip|domain|wildcard), description="Type of scope rule")
+    rule_type: str = Field(..., regex=r'^(url|ip|domain|wildcard)', description="Type of scope rule")
     is_inclusive: bool = Field(..., description="True for in-scope, False for out-of-scope")
     description: Optional[str] = Field(None, description="Rule description")
     priority: int = Field(0, description="Rule priority (higher = more important)")
@@ -414,7 +414,7 @@ class ScopeConfiguration(BaseModel):
     
     target_id: str = Field(..., description="Target ID")
     rules: List[ScopeRule] = Field(..., description="List of scope rules")
-    default_policy: str = Field("deny", regex=r'^(allow|deny), description="Default policy for unlisted assets")
+    default_policy: str = Field("deny", regex=r'^(allow|deny)', description="Default policy for unlisted assets")
     validation_notes: Optional[str] = Field(None, description="Notes about scope validation")
     last_updated: datetime = Field(default_factory=datetime.utcnow, description="Last update timestamp")
 
@@ -423,7 +423,7 @@ class TargetHealth(BaseModel):
     
     target_id: str = Field(..., description="Target ID")
     is_healthy: bool = Field(..., description="Overall health status")
-    connectivity_status: str = Field(..., regex=r'^(online|offline|degraded|unknown), description="Connectivity status")
+    connectivity_status: str = Field(..., regex=r'^(online|offline|degraded|unknown)', description="Connectivity status")
     last_successful_scan: Optional[datetime] = Field(None, description="Last successful scan timestamp")
     last_connectivity_check: datetime = Field(..., description="Last connectivity check timestamp")
     health_issues: List[str] = Field(default_factory=list, description="List of detected health issues")

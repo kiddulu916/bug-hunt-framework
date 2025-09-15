@@ -186,8 +186,8 @@ async def get_report(
 
 @router.put("/{report_id}", response_model=ReportResponse)
 async def update_report(
-    report_id: str = Path(..., description="Report ID"),
     report_data: ReportUpdate,
+    report_id: str = Path(..., description="Report ID"),
     db: Session = Depends(get_db),
     current_user: dict = Depends(get_current_user)
 ):

@@ -400,7 +400,7 @@ class BulkReportOperation(BaseModel):
     """Schema for bulk operations on reports."""
     
     report_ids: List[str] = Field(..., min_items=1, description="List of report IDs")
-    operation: str = Field(..., regex=r'^(regenerate|delete|export|update_redaction), description="Operation to perform")
+    operation: str = Field(..., regex=r'^(regenerate|delete|export|update_redaction)', description="Operation to perform")
     parameters: Dict[str, Any] = Field(default_factory=dict, description="Operation-specific parameters")
 
     class Config:
@@ -443,7 +443,7 @@ class ReportDelivery(BaseModel):
     """Schema for report delivery configuration."""
     
     report_id: str = Field(..., description="Report ID to deliver")
-    delivery_method: str = Field(..., regex=r'^(email|webhook|ftp|api), description="Delivery method")
+    delivery_method: str = Field(..., regex=r'^(email|webhook|ftp|api)', description="Delivery method")
     recipients: List[str] = Field(..., min_items=1, description="Delivery recipients")
     delivery_options: Dict[str, Any] = Field(default_factory=dict, description="Method-specific options")
     schedule: Optional[str] = Field(None, description="Delivery schedule (cron expression)")
@@ -485,12 +485,12 @@ class ReportApproval(BaseModel):
     """Schema for report approval workflow."""
     
     report_id: str = Field(..., description="Report ID")
-    approval_status: str = Field(..., regex=r'^(pending|approved|rejected|revision_required), description="Approval status")
+    approval_status: str = Field(..., regex=r'^(pending|approved|rejected|revision_required)', description="Approval status")
     reviewer: str = Field(..., description="Report reviewer")
     review_comments: Optional[str] = Field(None, description="Review comments")
     approval_date: Optional[datetime] = Field(None, description="Approval timestamp")
     revision_requests: List[str] = Field(default_factory=list, description="Specific revision requests")
-    approval_level: str = Field(..., regex=r'^(technical|management|client), description="Approval level")
+    approval_level: str = Field(..., regex=r'^(technical|management|client)', description="Approval level")
     next_reviewer: Optional[str] = Field(None, description="Next person in approval chain")
 
 class ReportMetadata(BaseModel):

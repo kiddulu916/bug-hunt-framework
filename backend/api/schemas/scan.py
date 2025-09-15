@@ -497,7 +497,7 @@ class BulkScanOperation(BaseModel):
     """Schema for bulk operations on scan sessions."""
     
     scan_session_ids: List[str] = Field(..., min_items=1, description="List of scan session IDs")
-    operation: str = Field(..., regex=r'^(start|pause|resume|stop|delete|update_priority), description="Operation to perform")
+    operation: str = Field(..., regex=r'^(start|pause|resume|stop|delete|update_priority)', description="Operation to perform")
     parameters: Dict[str, Any] = Field(default_factory=dict, description="Operation-specific parameters")
 
     class Config:
@@ -575,7 +575,7 @@ class ScanExport(BaseModel):
     """Schema for scan export data."""
     
     scan_sessions: List[ScanSessionResponse] = Field(..., description="Scan sessions to export")
-    export_format: str = Field(..., regex=r'^(csv|json|xml), description="Export format")
+    export_format: str = Field(..., regex=r'^(csv|json|xml)', description="Export format")
     include_results: bool = Field(False, description="Include detailed scan results")
     include_tool_outputs: bool = Field(False, description="Include tool output files")
     filters: Dict[str, Any] = Field(default_factory=dict, description="Applied filters")

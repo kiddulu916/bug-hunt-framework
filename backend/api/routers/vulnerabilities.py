@@ -189,8 +189,8 @@ async def get_vulnerability(
 
 @router.put("/{vulnerability_id}", response_model=VulnerabilityResponse)
 async def update_vulnerability(
-    vulnerability_id: str = Path(..., description="Vulnerability ID"),
     vulnerability_data: VulnerabilityUpdate,
+    vulnerability_id: str = Path(..., description="Vulnerability ID"),
     db: Session = Depends(get_db),
     current_user: dict = Depends(get_current_user)
 ):

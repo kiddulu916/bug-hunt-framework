@@ -204,8 +204,8 @@ async def get_scan_session(
 
 @router.put("/{scan_id}", response_model=ScanSessionResponse)
 async def update_scan_session(
-    scan_id: str = Path(..., description="Scan session ID"),
     scan_data: ScanSessionUpdate,
+    scan_id: str = Path(..., description="Scan session ID"),
     db: Session = Depends(get_db),
     current_user: dict = Depends(get_current_user)
 ):
