@@ -7,9 +7,18 @@ This module imports and exposes all business logic services for the Bug Bounty P
 from .target_service import TargetService
 from .scanning_service import ScanningService
 from .reporting_service import ReportingService
+from .vulnerability_scanner import VulnerabilityScanner
+from .vulnerability_analyzer import VulnerabilityAnalyzer as AsyncVulnerabilityAnalyzer
+from .recon_service import ReconService
+from .exploitation_service import ExploitationService
+from .notification_service import NotificationService
+from .callback_server import CallbackService
+from .scan_scheduler import ScanScheduler
 
-# Import vulnerability services
-from .vulnerability_services import VulnerabilityAnalyzer, CVSSCalculator, EvidenceHandler
+# Import vulnerability services (Django-based)
+from .vulnerability_services.analyzer import VulnerabilityAnalyzer
+from .vulnerability_services.cvss import CVSSCalculator, CVSSMetric
+from .vulnerability_services.evidence import EvidenceHandler
 
 # Service metadata
 __version__ = "1.0.0"
@@ -20,14 +29,22 @@ __description__ = "Business logic services for the Bug Bounty Automation Platfor
 __all__ = [
     # Main services
     "TargetService",
-    "ScanningService", 
+    "ScanningService",
     "ReportingService",
-    
-    # Vulnerability services
+    "VulnerabilityScanner",
+    "AsyncVulnerabilityAnalyzer",
+    "ReconService",
+    "ExploitationService",
+    "NotificationService",
+    "CallbackService",
+    "ScanScheduler",
+
+    # Vulnerability services (Django-based)
     "VulnerabilityAnalyzer",
     "CVSSCalculator",
+    "CVSSMetric",
     "EvidenceHandler",
-    
+
     # Service metadata
     "__version__",
     "__title__",
@@ -39,6 +56,13 @@ SERVICE_REGISTRY = {
     'target_service': TargetService,
     'scanning_service': ScanningService,
     'reporting_service': ReportingService,
+    'vulnerability_scanner': VulnerabilityScanner,
+    'async_vulnerability_analyzer': AsyncVulnerabilityAnalyzer,
+    'recon_service': ReconService,
+    'exploitation_service': ExploitationService,
+    'notification_service': NotificationService,
+    'callback_service': CallbackService,
+    'scan_scheduler': ScanScheduler,
     'vulnerability_analyzer': VulnerabilityAnalyzer,
     'cvss_calculator': CVSSCalculator,
     'evidence_handler': EvidenceHandler,

@@ -17,6 +17,18 @@ from fastapi.openapi.docs import get_redoc_html, get_swagger_ui_html
 from fastapi.openapi.utils import get_openapi
 from starlette.middleware.sessions import SessionMiddleware
 
+# Import performance optimization modules
+from core.middleware import (
+    create_performance_middleware,
+    create_caching_middleware,
+    create_rate_limiting_middleware,
+    create_deduplication_middleware,
+    create_validation_middleware,
+    create_compression_middleware
+)
+from core.cache import warm_dashboard_cache, check_cache_health
+from core.database_optimizer import get_database_health
+
 # Import routers
 from api.routers import vulnerabilities, targets, scans, reports
 from api.dependencies.database import get_db
@@ -47,6 +59,13 @@ async def lifespan(app: FastAPI):
     except Exception as e:
         logger.error("Failed to create database tables: %s", e)
         raise
+
+    # Initialize cache and warm up frequently accessed data
+    try:
+        warm_dashboard_cache()
+        logger.info("Cache warmed successfully")
+    except Exception as e:
+        logger.error("Failed to warm cache: %s", e)
 
     # Initialize any additional services here
     logger.info("API startup completed successfully")
@@ -79,6 +98,26 @@ app = FastAPI(
 # Middleware configuration
 def setup_middleware():
     """Configure all middleware for the FastAPI application."""
+
+    # Performance optimization middleware (order matters!)
+
+    # 1. Request validation middleware (first)
+    app.add_middleware(create_validation_middleware)
+
+    # 2. Response compression middleware
+    app.add_middleware(create_compression_middleware, minimum_size=1000)
+
+    # 3. Request deduplication middleware
+    app.add_middleware(create_deduplication_middleware, dedup_window=5)
+
+    # 4. Response caching middleware
+    app.add_middleware(create_caching_middleware, default_ttl=300)
+
+    # 5. Rate limiting middleware
+    app.add_middleware(create_rate_limiting_middleware, global_limit=100, window_seconds=60)
+
+    # 6. Performance monitoring middleware
+    app.add_middleware(create_performance_middleware, slow_threshold=1.0)
 
     # CORS middleware
     allowed_origins = os.getenv("CORS_ALLOWED_ORIGINS", "").split(",")
@@ -151,21 +190,7 @@ async def logging_middleware(request: Request, call_next):
 
     return response
 
-@app.middleware("http")
-async def rate_limiting_middleware(request: Request, call_next):
-    """Apply rate limiting to API requests."""
-    client_ip = request.client.host
-
-    # Check if rate limit is exceeded
-    if not rate_limiter.is_allowed(client_ip, limit=100, window_seconds=60):
-        raise HTTPException(
-            status_code=429,
-            detail="Rate limit exceeded. Please try again later.",
-            headers={"Retry-After": "60"}
-        )
-
-    response = await call_next(request)
-    return response
+# Note: Rate limiting is now handled by RateLimitingMiddleware
 
 # Exception handlers
 @app.exception_handler(BugBountyPlatformException)
@@ -229,24 +254,48 @@ async def health_check():
 
 @app.get("/health/detailed", tags=["Health"])
 async def detailed_health_check(db = Depends(get_db)):
-    """Detailed health check including database connectivity."""
+    """Detailed health check including database connectivity and performance metrics."""
     from core.database import check_database_health, get_database_stats
 
+    # Database health
     db_healthy = check_database_health()
     db_stats = get_database_stats()
 
+    # Enhanced database health with optimizer
+    db_health = get_database_health()
+
+    # Cache health
+    cache_health = check_cache_health()
+
+    # Get middleware performance stats
+    performance_stats = {}
+    for middleware in app.middleware_stack:
+        if hasattr(middleware, 'cls') and hasattr(middleware.cls, 'get_stats'):
+            try:
+                middleware_name = middleware.cls.__name__
+                stats_method = getattr(middleware.cls, 'get_stats', None)
+                if stats_method:
+                    performance_stats[middleware_name] = stats_method()
+            except Exception as e:
+                logger.error(f"Error getting middleware stats: {e}")
+
+    overall_healthy = db_healthy and cache_health.get('status') == 'healthy'
+
     return {
-        "status": "healthy" if db_healthy else "unhealthy",
+        "status": "healthy" if overall_healthy else "unhealthy",
         "service": APP_NAME,
         "version": APP_VERSION,
         "timestamp": time.time(),
         "checks": {
             "database": {
                 "status": "healthy" if db_healthy else "unhealthy",
-                "stats": db_stats
+                "basic_stats": db_stats,
+                "detailed_health": db_health
             },
+            "cache": cache_health,
             "api": {
-                "status": "healthy"
+                "status": "healthy",
+                "performance": performance_stats
             }
         }
     }
@@ -388,6 +437,50 @@ async def api_status():
         "version": APP_VERSION,
         "environment": os.getenv("ENVIRONMENT", "development"),
         "debug": os.getenv("DEBUG", "True").lower() == "true"
+    }
+
+
+@app.get("/api/performance", tags=["Utility"])
+async def api_performance_metrics():
+    """Get comprehensive API performance metrics."""
+    from core.database_optimizer import performance_monitor
+    from core.cache import cache_manager
+
+    # Get database performance stats
+    db_performance = performance_monitor.get_performance_stats()
+
+    # Get cache statistics
+    cache_stats = cache_manager.get_stats()
+
+    # Collect middleware statistics
+    middleware_stats = {}
+    for middleware in app.middleware_stack:
+        if hasattr(middleware, 'cls'):
+            middleware_name = middleware.cls.__name__
+            if hasattr(middleware.cls, 'get_stats'):
+                try:
+                    stats_method = getattr(middleware.cls, 'get_stats', None)
+                    if stats_method:
+                        middleware_stats[middleware_name] = stats_method()
+                except Exception as e:
+                    logger.error(f"Error getting {middleware_name} stats: {e}")
+            elif hasattr(middleware.cls, 'get_cache_stats'):
+                try:
+                    stats_method = getattr(middleware.cls, 'get_cache_stats', None)
+                    if stats_method:
+                        middleware_stats[middleware_name] = stats_method()
+                except Exception as e:
+                    logger.error(f"Error getting {middleware_name} cache stats: {e}")
+
+    return {
+        "timestamp": time.time(),
+        "database": db_performance,
+        "cache": cache_stats,
+        "middleware": middleware_stats,
+        "api_info": {
+            "total_routes": len(app.routes),
+            "middleware_count": len(app.middleware_stack)
+        }
     }
 
 if __name__ == "__main__":

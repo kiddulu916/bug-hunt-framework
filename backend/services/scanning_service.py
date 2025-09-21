@@ -404,3 +404,10 @@ class ScanningService:
             for tool_name in scan_config['scan_config'].get('tools', []):
                 if tool_name not in TOOL_CONFIGS:
                     return ValidationResult(False, f"Unknown tool: {tool_name}")
+
+            return ValidationResult(True, "Scan configuration is valid")
+
+        except KeyError as e:
+            return ValidationResult(False, f"Missing configuration key: {e}")
+        except Exception as e:
+            return ValidationResult(False, f"Configuration validation failed: {e}")

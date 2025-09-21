@@ -10,12 +10,15 @@ import secrets
 import hashlib
 import re
 from datetime import datetime, timedelta
-from typing import Optional, Dict, Any, List
+from typing import Optional, Dict, Any, List, Set, Tuple
 from jose import JWTError, jwt
-from fastapi import HTTPException, status, Depends
+from fastapi import HTTPException, status, Depends, Request
 from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
 from django.conf import settings
 from passlib.context import CryptContext
+
+from core.cache import cache_manager
+from core.exceptions import BugBountyPlatformException
 
 logger = logging.getLogger(__name__)
 
@@ -34,15 +37,266 @@ ACCESS_TOKEN_EXPIRE_MINUTES = getattr(
 security = HTTPBearer()
 
 
+class SecurityViolation(BugBountyPlatformException):
+    """Security violation exception."""
+
+    def __init__(self, violation_type: str, details: str, client_ip: str = None):
+        message = f"Security violation: {violation_type} - {details}"
+        super().__init__(message, "SECURITY_VIOLATION", {
+            "violation_type": violation_type,
+            "details": details,
+            "client_ip": client_ip,
+            "timestamp": datetime.utcnow().isoformat()
+        })
+
+
+class ThreatDetector:
+    """
+    Enhanced threat detection and analysis.
+    """
+
+    def __init__(self):
+        self.suspicious_patterns = {
+            'scanner_user_agents': [
+                'nmap', 'masscan', 'zmap', 'nuclei', 'sqlmap',
+                'burp', 'dirb', 'gobuster', 'wfuzz', 'ffuf',
+                'nikto', 'whatweb', 'skipfish'
+            ],
+            'attack_patterns': [
+                'union select', 'information_schema', '@@version',
+                '<script>', 'javascript:', 'onerror=',
+                '../etc/passwd', '../../windows/system32',
+                'cat /etc/', 'cmd.exe', 'powershell'
+            ],
+            'sql_injection_patterns': [
+                r"(\b(SELECT|INSERT|UPDATE|DELETE|DROP|CREATE|ALTER|EXEC|UNION|SCRIPT)\b)",
+                r"(--|#|/\*|\*/)",
+                r"(\b(OR|AND)\s+\d+\s*=\s*\d+)",
+                r"(\'\s*(OR|AND)\s+\'\w+\'\s*=\s*\'\w+)"
+            ],
+            'xss_patterns': [
+                r"<script[^>]*>.*?</script>",
+                r"javascript:",
+                r"on\w+\s*=",
+                r"<iframe[^>]*>",
+                r"<object[^>]*>"
+            ]
+        }
+
+        self.threat_scores = {
+            'scanner_detection': 50,
+            'sql_injection_attempt': 80,
+            'xss_attempt': 60,
+            'path_traversal_attempt': 70,
+            'command_injection_attempt': 90,
+            'suspicious_user_agent': 30,
+            'multiple_requests': 40,
+            'blocked_country': 20
+        }
+
+    def analyze_request(self, request: Request) -> Dict[str, Any]:
+        """Comprehensive threat analysis of incoming request."""
+        threat_score = 0
+        threats_detected = []
+        analysis = {
+            'client_ip': request.client.host,
+            'user_agent': request.headers.get('user-agent', ''),
+            'path': str(request.url.path),
+            'method': request.method,
+            'query_params': dict(request.query_params),
+            'timestamp': datetime.utcnow()
+        }
+
+        # Analyze User-Agent for scanners
+        user_agent = analysis['user_agent'].lower()
+        for scanner in self.suspicious_patterns['scanner_user_agents']:
+            if scanner in user_agent:
+                threat_score += self.threat_scores['scanner_detection']
+                threats_detected.append(f"Scanner detected: {scanner}")
+
+        # Analyze request for attack patterns
+        full_request = f"{analysis['path']} {str(analysis['query_params'])}"
+
+        # SQL Injection detection
+        for pattern in self.suspicious_patterns['sql_injection_patterns']:
+            if re.search(pattern, full_request, re.IGNORECASE):
+                threat_score += self.threat_scores['sql_injection_attempt']
+                threats_detected.append("SQL injection attempt detected")
+                break
+
+        # XSS detection
+        for pattern in self.suspicious_patterns['xss_patterns']:
+            if re.search(pattern, full_request, re.IGNORECASE):
+                threat_score += self.threat_scores['xss_attempt']
+                threats_detected.append("XSS attempt detected")
+                break
+
+        # Check request frequency
+        if self._is_high_frequency_client(analysis['client_ip']):
+            threat_score += self.threat_scores['multiple_requests']
+            threats_detected.append("High frequency requests detected")
+
+        analysis.update({
+            'threat_score': threat_score,
+            'threats_detected': threats_detected,
+            'risk_level': self._calculate_risk_level(threat_score)
+        })
+
+        return analysis
+
+    def _is_high_frequency_client(self, client_ip: str) -> bool:
+        """Check if client is making high frequency requests."""
+        key = f"request_count:{client_ip}"
+        current_count = cache_manager.get(key, 0)
+
+        # More than 100 requests per minute is considered high frequency
+        if current_count > 100:
+            return True
+
+        cache_manager.set(key, current_count + 1, 60)
+        return False
+
+    def _calculate_risk_level(self, threat_score: int) -> str:
+        """Calculate risk level based on threat score."""
+        if threat_score >= 100:
+            return "CRITICAL"
+        elif threat_score >= 70:
+            return "HIGH"
+        elif threat_score >= 40:
+            return "MEDIUM"
+        elif threat_score >= 20:
+            return "LOW"
+        else:
+            return "MINIMAL"
+
+
 class SecurityManager:
     """
-    Centralized security management for the platform.
+    Enhanced centralized security management for the platform.
     """
 
     def __init__(self):
         self.pwd_context = pwd_context
         self.secret_key = JWT_SECRET_KEY
         self.algorithm = ALGORITHM
+        self.threat_detector = ThreatDetector()
+        self.blocked_ips: Set[str] = set()
+        self._load_blocked_ips()
+
+    def _load_blocked_ips(self):
+        """Load blocked IPs from cache."""
+        try:
+            # Load any previously blocked IPs from cache
+            pass  # Implementation would load from persistent storage
+        except Exception as e:
+            logger.error("Error loading blocked IPs: %s", e)
+
+    def validate_request_security(self, request: Request) -> Tuple[bool, Dict[str, Any]]:
+        """Comprehensive request security validation."""
+        client_ip = request.client.host
+
+        # Check if IP is blocked
+        if client_ip in self.blocked_ips:
+            raise SecurityViolation(
+                "blocked_ip",
+                f"IP address {client_ip} is blocked",
+                client_ip
+            )
+
+        # Perform threat analysis
+        threat_analysis = self.threat_detector.analyze_request(request)
+
+        # Block if threat score is too high
+        if threat_analysis['threat_score'] >= 100:
+            self.block_ip(client_ip, "High threat score")
+            raise SecurityViolation(
+                "high_threat_score",
+                f"Threat score {threat_analysis['threat_score']} exceeds threshold",
+                client_ip
+            )
+
+        # Log significant threats
+        if threat_analysis['threat_score'] >= 50:
+            log_security_event(
+                "security_threat_detected",
+                {
+                    "client_ip": client_ip,
+                    "threat_score": threat_analysis['threat_score'],
+                    "threats": threat_analysis['threats_detected']
+                }
+            )
+
+        return True, threat_analysis
+
+    def block_ip(self, ip_address: str, reason: str) -> None:
+        """Block IP address."""
+        self.blocked_ips.add(ip_address)
+        cache_manager.set(f"blocked_ip:{ip_address}", reason, 3600)
+        log_security_event(
+            "ip_blocked",
+            {"ip_address": ip_address, "reason": reason}
+        )
+
+    def unblock_ip(self, ip_address: str) -> bool:
+        """Unblock IP address."""
+        if ip_address in self.blocked_ips:
+            self.blocked_ips.remove(ip_address)
+            cache_manager.delete(f"blocked_ip:{ip_address}")
+            log_security_event(
+                "ip_unblocked",
+                {"ip_address": ip_address}
+            )
+            return True
+        return False
+
+    def enhanced_input_validation(self, data: Any, field_name: str = "input") -> Any:
+        """Enhanced input validation and sanitization."""
+        if isinstance(data, str):
+            # Check for malicious patterns
+            if not self.validate_command_injection(data):
+                raise SecurityViolation(
+                    "command_injection",
+                    f"Potential command injection in {field_name}",
+                )
+
+            # Additional SQL injection check
+            if self._check_sql_injection(data):
+                raise SecurityViolation(
+                    "sql_injection",
+                    f"Potential SQL injection in {field_name}",
+                )
+
+            # XSS check
+            if self._check_xss(data):
+                raise SecurityViolation(
+                    "xss_attempt",
+                    f"Potential XSS in {field_name}",
+                )
+
+            # Sanitize and return
+            return self.sanitize_input(data)
+
+        elif isinstance(data, dict):
+            return {k: self.enhanced_input_validation(v, f"{field_name}.{k}") for k, v in data.items()}
+
+        elif isinstance(data, list):
+            return [self.enhanced_input_validation(item, f"{field_name}[{i}]") for i, item in enumerate(data)]
+
+        return data
+
+    def _check_sql_injection(self, input_string: str) -> bool:
+        """Enhanced SQL injection detection."""
+        for pattern in self.threat_detector.suspicious_patterns['sql_injection_patterns']:
+            if re.search(pattern, input_string, re.IGNORECASE):
+                return True
+        return False
+
+    def _check_xss(self, input_string: str) -> bool:
+        """Enhanced XSS detection."""
+        for pattern in self.threat_detector.suspicious_patterns['xss_patterns']:
+            if re.search(pattern, input_string, re.IGNORECASE):
+                return True
+        return False
 
     # Password handling
 
