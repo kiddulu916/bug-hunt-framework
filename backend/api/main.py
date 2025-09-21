@@ -30,7 +30,7 @@ from core.cache import warm_dashboard_cache, check_cache_health
 from core.database_optimizer import get_database_health
 
 # Import routers
-from api.routers import vulnerabilities, targets, scans, reports
+from api.routers import auth, vulnerabilities, targets, scans, reports
 from api.dependencies.database import get_db
 from api.dependencies.auth import get_current_user
 from core.database import engine, Base
@@ -386,6 +386,13 @@ app.openapi = custom_openapi
 setup_middleware()
 
 # Include routers
+# Authentication router (no auth required)
+app.include_router(
+    auth.router,
+    prefix=f"/api/{API_VERSION}/auth",
+    tags=["Authentication"]
+)
+
 app.include_router(
     vulnerabilities.router,
     prefix=f"/api/{API_VERSION}/vulnerabilities",

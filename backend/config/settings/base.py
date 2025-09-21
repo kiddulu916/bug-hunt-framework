@@ -55,8 +55,10 @@ THIRD_PARTY_APPS = [
 LOCAL_APPS = [
     'apps.vulnerabilities',
     'apps.targets',
-    'apps.scans',
-    'apps.reports',
+    'apps.reconnaissance',
+    'apps.scanning',
+    'apps.reporting',
+    'apps.exploitation',
 ]
 
 INSTALLED_APPS = DJANGO_APPS + THIRD_PARTY_APPS + LOCAL_APPS

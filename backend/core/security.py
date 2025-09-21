@@ -510,6 +510,14 @@ class SecurityManager:
         provided_hash = self.hash_api_key(provided_key)
         return secrets.compare_digest(provided_hash, stored_hash)
 
+    def generate_access_token(self, user_data: Dict) -> str:
+        """Generate JWT access token for user"""
+        return self.create_access_token({"sub": str(user_data["id"])})
+
+    def generate_refresh_token(self, user_data: Dict) -> str:
+        """Generate JWT refresh token for user"""
+        return self.create_refresh_token({"sub": str(user_data["id"])})
+
 
 # Global security manager instance
 security_manager = SecurityManager()

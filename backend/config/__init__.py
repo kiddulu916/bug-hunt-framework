@@ -6,6 +6,11 @@ This module imports and exposes Django configuration components.
 import os
 from django.conf import settings
 
+# Import Celery app
+from .celery import app as celery_app
+
+__all__ = ('celery_app',)
+
 # Import settings modules
 from .settings import base, development, production, testing
 

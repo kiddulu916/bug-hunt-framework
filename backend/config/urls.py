@@ -30,8 +30,10 @@ def api_root(request):
         'endpoints': {
             'vulnerabilities': '/api/v1/vulnerabilities/',
             'targets': '/api/v1/targets/',
-            'scans': '/api/v1/scans/',
-            'reports': '/api/v1/reports/',
+            'reconnaissance': '/api/v1/reconnaissance/',
+            'scanning': '/api/v1/scanning/',
+            'exploitation': '/api/v1/exploitation/',
+            'reporting': '/api/v1/reporting/',
             'docs': '/api/docs/',
             'redoc': '/api/redoc/',
         }
@@ -65,8 +67,10 @@ urlpatterns = [
     # API v1 endpoints
     path('api/v1/vulnerabilities/', include('apps.vulnerabilities.urls')),
     path('api/v1/targets/', include('apps.targets.urls')),
-    path('api/v1/scans/', include('apps.scans.urls')),
-    path('api/v1/reports/', include('apps.reports.urls')),
+    path('api/v1/reconnaissance/', include('apps.reconnaissance.urls')),
+    path('api/v1/scanning/', include('apps.scanning.urls')),
+    path('api/v1/exploitation/', include('apps.exploitation.urls')),
+    path('api/v1/reporting/', include('apps.reporting.urls')),
 
     # Redirect root to API docs
     path('', RedirectView.as_view(url='/api/docs/', permanent=False)),
