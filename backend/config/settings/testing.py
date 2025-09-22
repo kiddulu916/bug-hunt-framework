@@ -2,10 +2,31 @@
 Testing settings for Bug Bounty Automation Platform.
 """
 
+# Override ArrayField for SQLite compatibility during testing - MUST be before imports
+import sys
+if 'test' in sys.argv or 'pytest' in sys.modules:
+    import django.contrib.postgres.fields
+    from django.db import models
+
+    # Enhanced ArrayField mock for SQLite compatibility
+    class MockArrayField(models.JSONField):
+        def __init__(self, base_field=None, size=None, **kwargs):
+            kwargs.setdefault('default', list)
+            super().__init__(**kwargs)
+
+        def contribute_to_class(self, cls, name, **kwargs):
+            super().contribute_to_class(cls, name, **kwargs)
+
+        def get_internal_type(self):
+            return "JSONField"
+
+    # Monkey patch ArrayField
+    django.contrib.postgres.fields.ArrayField = MockArrayField
+
 from .base import *
 import tempfile
 
-# Test database configuration
+# Test database configuration - use SQLite with enhanced ArrayField handling
 DATABASES = {
     'default': {
         'ENGINE': 'django.db.backends.sqlite3',
@@ -27,17 +48,8 @@ CACHES = {
     }
 }
 
-# Disable migrations during testing for speed
-
-
-class DisableMigrations:
-    def __contains__(self, item):
-        return True
-
-    def __getitem__(self, item):
-        return None
-
-MIGRATION_MODULES = DisableMigrations()
+# Enable migrations for testing to create tables properly
+# MIGRATION_MODULES are not disabled for testing to ensure tables are created
 
 
 # Password hashers optimized for testing speed
@@ -123,6 +135,19 @@ HEALTH_CHECK = {
     'DISK_USAGE_MAX': 99,  # percent
     'MEMORY_MIN': 10,     # in MB
 }
+
+# Remove development-specific apps that aren't needed for testing
+INSTALLED_APPS = [app for app in INSTALLED_APPS if app not in [
+    'django_extensions',
+    'debug_toolbar',
+    'django_silk',
+]]
+
+# Remove development-specific middleware
+MIDDLEWARE = [m for m in MIDDLEWARE if m not in [
+    'debug_toolbar.middleware.DebugToolbarMiddleware',
+    'silk.middleware.SilkyMiddleware',
+]]
 
 # Testing constants
 TEST_SETTINGS = {

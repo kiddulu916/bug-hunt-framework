@@ -29,6 +29,9 @@ DEBUG = env('DEBUG')
 
 ALLOWED_HOSTS = env('ALLOWED_HOSTS')
 
+# Admin URL configuration
+ADMIN_URL = env('ADMIN_URL', default='admin/')
+
 # Application definition
 DJANGO_APPS = [
     'django.contrib.admin',

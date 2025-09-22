@@ -24,7 +24,12 @@ class TestRunner:
     """Enhanced test runner with multiple options"""
 
     def __init__(self):
-        self.base_command = ['pytest']
+        # Use virtual environment's pytest if available
+        venv_pytest = Path(__file__).parent.parent.parent / '.venv' / 'bin' / 'pytest'
+        if venv_pytest.exists():
+            self.base_command = [str(venv_pytest)]
+        else:
+            self.base_command = ['pytest']
         self.test_dir = Path(__file__).parent
 
     def run_unit_tests(self, coverage=True, verbose=False):

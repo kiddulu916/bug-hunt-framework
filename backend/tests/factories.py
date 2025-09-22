@@ -19,8 +19,8 @@ from apps.exploitation.models import (
     ExploitationSession, ExploitResult, ExploitChain, ExploitTemplate,
     ExploitationType, ExploitationStatus, ExploitationSeverity
 )
-from apps.reconnaissance.models import ReconSession, ReconResult
-from apps.reporting.models import Report, ReportFormat, ReportStatus
+from apps.reconnaissance.models import ReconResult
+from apps.reporting.models import Report, ReportFormat
 
 User = get_user_model()
 
@@ -181,8 +181,7 @@ class ToolExecutionFactory(DjangoModelFactory):
     error_message = factory.Maybe(
         'status',
         yes_declaration='',
-        no_declaration=Faker('sentence'),
-        condition=lambda obj: obj.status != 'failed'
+        no_declaration=Faker('sentence')
     )
 
 
@@ -438,38 +437,27 @@ class ExploitTemplateFactory(DjangoModelFactory):
     )
 
 
-class ReconSessionFactory(DjangoModelFactory):
-    """Factory for creating test reconnaissance sessions"""
+class ReconResultFactory(DjangoModelFactory):
+    """Factory for creating test reconnaissance results"""
 
     class Meta:
-        model = ReconSession
+        model = ReconResult
 
-    target = SubFactory(TargetFactory)
-    session_name = factory.LazyAttribute(
-        lambda obj: f"Recon - {obj.target.target_name}"
-    )
-    status = 'completed'
+    scan_session = SubFactory(ScanSessionFactory)
+    result_type = factory.Iterator(['subdomain', 'endpoint', 'service', 'technology'])
+    discovered_asset = factory.Faker('domain_name')
 
-    recon_config = factory.LazyFunction(
-        lambda: {
-            'passive_recon': True,
-            'active_recon': False,
-            'tools': ['amass', 'subfinder', 'crt.sh'],
-            'depth': 3
-        }
-    )
+    # Discovery Information
+    discovered_by_tool = factory.Iterator(['amass', 'subfinder', 'crt.sh', 'nuclei'])
+    discovery_method = factory.Iterator(['dns_enum', 'cert_transparency', 'port_scan'])
+    confidence_score = factory.Faker('pyfloat', min_value=0.0, max_value=1.0)
 
-    subdomains_found = factory.Faker('pyint', min_value=5, max_value=100)
-    endpoints_discovered = factory.Faker('pyint', min_value=10, max_value=500)
-    technologies_identified = factory.LazyFunction(
-        lambda: [
-            'nginx/1.18.0',
-            'PHP/7.4.3',
-            'WordPress 5.8',
-            'MySQL',
-            'jQuery 3.6.0'
-        ]
-    )
+    # Scope validation
+    is_in_scope = factory.Faker('pybool')
+
+    # Additional data
+    additional_info = factory.LazyFunction(dict)
+    headers = factory.LazyFunction(dict)
 
 
 class ReportFactory(DjangoModelFactory):
@@ -484,7 +472,6 @@ class ReportFactory(DjangoModelFactory):
     )
 
     report_format = factory.Iterator([choice[0] for choice in ReportFormat.choices])
-    status = factory.Iterator([choice[0] for choice in ReportStatus.choices])
 
     template_used = factory.Iterator([
         'executive_summary', 'technical_detail', 'compliance_audit', 'penetration_test'

@@ -2,7 +2,32 @@
   "permissions": {
     "allow": [
       "Bash(rm:*)",
-      "Bash(mv:*)"
+      "Bash(mv:*)",
+      "Bash(DJANGO_SETTINGS_MODULE=config.settings.testing .venv/bin/python manage.py migrate --verbosity=2)",
+      "Bash(DJANGO_SETTINGS_MODULE=config.settings.testing .venv/bin/python backend/manage.py migrate --verbosity=2)",
+      "Bash(DJANGO_SETTINGS_MODULE=config.settings.testing .venv/bin/python backend/manage.py check --verbosity=2)",
+      "Bash(.venv/bin/pip install:*)",
+      "Bash(DJANGO_SETTINGS_MODULE=config.settings.testing .venv/bin/python backend/manage.py check --verbosity=1)",
+      "Bash(DJANGO_SETTINGS_MODULE=config.settings.testing .venv/bin/python backend/tests/run_tests.py unit --verbose --no-coverage)",
+      "Bash(DJANGO_SETTINGS_MODULE=config.settings.testing .venv/bin/python backend/tests/run_tests.py specific --test-path=\"tests/unit/test_models/\" --verbose --no-coverage)",
+      "Bash(find:*)",
+      "Bash(DJANGO_SETTINGS_MODULE=config.settings.testing .venv/bin/python backend/manage.py showmigrations)",
+      "Bash(DJANGO_SETTINGS_MODULE=config.settings.testing ../.venv/bin/python -m pytest -v --tb=short --create-db tests/unit/test_models/test_targets.py -k \"test_target_creation\")",
+      "Bash(DJANGO_SETTINGS_MODULE=config.settings.testing ../.venv/bin/python -m pytest -v --tb=short --create-db tests/unit/test_models/test_target_models.py::test_target_creation -s)",
+      "Bash(DJANGO_SETTINGS_MODULE=config.settings.testing ../.venv/bin/python -m pytest -v --tb=short --create-db tests/unit/test_models/test_target_models.py::TargetModelTest::test_target_creation -s)",
+      "Bash(DJANGO_SETTINGS_MODULE=config.settings.testing ../.venv/bin/python -m pytest --nomigrations --tb=short tests/unit/test_models/test_target_models.py::TargetModelTest::test_target_creation -v)",
+      "Bash(DJANGO_SETTINGS_MODULE=config.settings.testing ../.venv/bin/python -m pytest -v --tb=short tests/unit/test_utils.py -x)",
+      "Bash(DJANGO_SETTINGS_MODULE=config.settings.testing ../.venv/bin/python tests/run_tests.py --collect-only --no-coverage)",
+      "Bash(DJANGO_SETTINGS_MODULE=config.settings.testing ../.venv/bin/python tests/run_tests.py unit --collect-only --no-coverage)",
+      "Bash(DJANGO_SETTINGS_MODULE=config.settings.testing ../.venv/bin/python tests/run_tests.py unit --no-coverage --verbose)",
+      "Bash(DJANGO_SETTINGS_MODULE=config.settings.testing ../.venv/bin/python -m pytest tests/unit/test_models/ --tb=short --maxfail=5 -v)",
+      "Bash(sudo service:*)",
+      "Bash(pg_isready:*)",
+      "Bash(DJANGO_SETTINGS_MODULE=config.settings.testing ../.venv/bin/python manage.py check --database default)",
+      "Bash(DJANGO_SETTINGS_MODULE=config.settings.testing ../.venv/bin/python manage.py migrate --verbosity=2)",
+      "Bash(psql:*)",
+      "Bash(DJANGO_SETTINGS_MODULE=config.settings.testing ../.venv/bin/python -m pytest tests/unit/test_models/ --tb=short --maxfail=1 -v)",
+      "Bash(DJANGO_SETTINGS_MODULE=config.settings.testing python tests/run_tests.py all --verbose --no-coverage)"
     ],
     "deny": [],
     "ask": []

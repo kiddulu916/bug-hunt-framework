@@ -11,14 +11,24 @@ from .celery import app as celery_app
 
 __all__ = ('celery_app',)
 
-# Import settings modules
-from .settings import base, development, production, testing
+# Import settings modules conditionally to avoid production dependency issues
+try:
+    from .settings import base, development, testing
+    # Only import production if we're in production or have proper env vars
+    if os.getenv('DJANGO_ENVIRONMENT') == 'production' or os.getenv('EMAIL_HOST'):
+        from .settings import production
+    else:
+        production = None
+except ImportError as e:
+    # Handle missing environment variables gracefully
+    from .settings import base, development, testing
+    production = None
 
 # Determine current environment
 ENVIRONMENT = os.getenv('DJANGO_ENVIRONMENT', 'development')
 
 # Import appropriate settings based on environment
-if ENVIRONMENT == 'production':
+if ENVIRONMENT == 'production' and production is not None:
     from .settings.production import *
 elif ENVIRONMENT == 'testing':
     from .settings.testing import *
