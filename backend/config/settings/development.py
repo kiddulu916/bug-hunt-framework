@@ -12,7 +12,7 @@ TEMPLATE_DEBUG = True
 INSTALLED_APPS += [
     'django_extensions',
     'debug_toolbar',
-    'django_silk',
+    'silk',
 ]
 
 # Development middleware
@@ -21,11 +21,14 @@ MIDDLEWARE += [
     'silk.middleware.SilkyMiddleware',
 ]
 
-# Debug toolbar configuration
+# Debug toolbar configuration for Docker environment
 INTERNAL_IPS = [
     '127.0.0.1',
     'localhost',
     '0.0.0.0',
+    'backend',
+    'bugbounty_backend',
+    '172.20.0.0/16',  # Docker network range
 ]
 
 DEBUG_TOOLBAR_CONFIG = {
@@ -40,18 +43,31 @@ SILKY_PYTHON_PROFILER_BINARY = True
 SILKY_PYTHON_PROFILER_RESULT_PATH = BASE_DIR / 'profiles'
 SILKY_META = True
 
-# Development database settings
-DATABASES['default'].update({
-    'OPTIONS': {
-        'options': '-c default_transaction_isolation=read_committed'
-    },
-    'CONN_MAX_AGE': 0,  # Disable persistent connections in development
-})
+# Development database settings - completely replace DATABASES config
+DATABASES = {
+    'default': {
+        'ENGINE': 'django.db.backends.postgresql',
+        'NAME': env('POSTGRES_DB', default='bugbounty_platform'),
+        'USER': env('POSTGRES_USER', default='bugbounty_user'),
+        'PASSWORD': env('POSTGRES_PASSWORD', default='password'),
+        'HOST': env('POSTGRES_HOST', default='localhost'),
+        'PORT': env('POSTGRES_PORT', default='5432'),
+        'OPTIONS': {
+            'sslmode': 'disable',  # Explicitly disable SSL for development
+        },
+        'CONN_MAX_AGE': 0,  # Disable persistent connections in development
+    }
+}
 
-# Disable caching in development
+# Use Redis cache in development for consistency with Docker setup
 CACHES = {
     'default': {
-        'BACKEND': 'django.core.cache.backends.dummy.DummyCache',
+        'BACKEND': 'django_redis.cache.RedisCache',
+        'LOCATION': env('REDIS_URL', default='redis://redis:6379/1'),
+        'OPTIONS': {
+            'CLIENT_CLASS': 'django_redis.client.DefaultClient',
+            'IGNORE_EXCEPTIONS': True,  # Don't fail if Redis is unavailable
+        }
     }
 }
 
@@ -106,9 +122,13 @@ CELERY_TASK_EAGER_PROPAGATES = True
 BUG_BOUNTY_SETTINGS.update({
     'ENABLE_DEBUG_MODE': True,
     'VERBOSE_TOOL_OUTPUT': True,
-    'SKIP_TOOL_VALIDATION': True,  # Skip checking if tools exist
+    'SKIP_TOOL_VALIDATION': False,  # Tools are available in Docker containers
     'MOCK_TOOL_EXECUTION': env('MOCK_TOOLS', default=False),
     'TEST_MODE': True,
+    'DOCKER_MODE': True,
+    'TOOLS_CONTAINER_NAME': 'bugbounty_tools',
+    'EVIDENCE_STORAGE_DIR': Path('/app/backend/evidence'),
+    'SCAN_RESULTS_DIR': Path('/app/backend/scan_results'),
 })
 
 # Django Extensions configuration

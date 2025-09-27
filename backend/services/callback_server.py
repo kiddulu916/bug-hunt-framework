@@ -21,20 +21,34 @@ import secrets
 import threading
 
 import aiohttp
-import dns.resolver
-import dns.server
-import dns.query
+
+# Optional DNS imports - not required for core functionality
+try:
+    import dns.resolver
+    import dns.server
+    import dns.query
+    DNS_AVAILABLE = True
+except ImportError:
+    DNS_AVAILABLE = False
 from aiohttp import web, WSMsgType
-from aiohttp_cors import setup as cors_setup, ResourceOptions
+
+# Optional CORS support
+try:
+    from aiohttp_cors import setup as cors_setup, ResourceOptions
+    CORS_AVAILABLE = True
+except ImportError:
+    CORS_AVAILABLE = False
 from celery import shared_task
 from sqlalchemy import Column, String, Text, DateTime, Boolean, JSON, Integer, Enum as SQLEnum
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.dialects.postgresql import UUID
 from sqlalchemy.orm import Session
 
-from backend.models import Base, Vulnerability, ScanSession, Target
-from backend.core.database import get_db_session
-from backend.services.notification_service import NotificationService
+from apps.targets.models import Target
+from apps.scanning.models import ScanSession
+from apps.vulnerabilities.models import Vulnerability
+from core.database import get_db_session, Base
+from services.notification_service import NotificationService
 
 
 class CallbackType(Enum):
@@ -106,7 +120,7 @@ class Callback(Base):
     timeout_seconds = Column(Integer, default=300)
     
     # Additional data
-    metadata = Column(JSON, default={})
+    callback_data = Column(JSON, default={})
     evidence = Column(JSON, default={})
     confidence_score = Column(Integer, default=0)  # 0-100
 
@@ -282,6 +296,9 @@ class DNSCallbackHandler:
     
     async def start_dns_server(self, domain: str, port: int = 53):
         """Start DNS server for callback handling"""
+        if not DNS_AVAILABLE:
+            raise ImportError("DNS functionality not available - install dnspython")
+
         try:
             self.domain = domain
             resolver = dns.resolver.Resolver()
@@ -591,15 +608,16 @@ class CallbackService:
         """Start HTTP callback server"""
         app = web.Application()
         
-        # Add CORS support
-        cors = cors_setup(app, defaults={
-            "*": ResourceOptions(
-                allow_credentials=True,
-                expose_headers="*",
-                allow_headers="*",
-                allow_methods="*"
-            )
-        })
+        # Add CORS support if available
+        if CORS_AVAILABLE:
+            cors = cors_setup(app, defaults={
+                "*": ResourceOptions(
+                    allow_credentials=True,
+                    expose_headers="*",
+                    allow_headers="*",
+                    allow_methods="*"
+                )
+            })
         
         # Routes for different callback types
         app.router.add_route('*', '/callback/{callback_id}', self.http_handler.handle_http_callback)
@@ -1176,7 +1194,7 @@ class CallbackService:
                 'confidence_score': callback.confidence_score,
                 'vulnerability_id': str(callback.vulnerability_id) if callback.vulnerability_id else None,
                 'evidence': callback.evidence,
-                'metadata': callback.metadata
+                'callback_data': callback.callback_data
             }
     
     async def get_active_callbacks(self, vulnerability_id: Optional[str] = None,

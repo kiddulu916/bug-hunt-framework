@@ -20,8 +20,8 @@ from reportlab.lib.styles import getSampleStyleSheet, ParagraphStyle
 from reportlab.lib.units import inch
 from reportlab.lib import colors
 
-from apps.reports.models import Report
-from apps.scans.models import ScanSession
+from apps.reporting.models import Report
+from apps.scanning.models import ScanSession
 from core.constants import REPORT_TYPES, REPORT_FORMATS, REPORT_TEMPLATES
 from core.exceptions import (
     ReportGenerationException,

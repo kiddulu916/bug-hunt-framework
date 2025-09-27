@@ -3,17 +3,21 @@ Base Tool Framework for Bug Bounty Automation Platform
 backend/tools/base.py
 
 Provides abstract base classes and common functionality for all penetration testing tools.
+Enhanced for Docker architecture with container-based tool execution.
 """
 
 import subprocess
 import uuid
 import logging
+import os
+import docker
 from abc import ABC, abstractmethod
 from typing import Dict, List, Optional, Any
 from datetime import datetime
 from pathlib import Path
 from dataclasses import dataclass, asdict
 from enum import Enum
+from django.conf import settings
 
 logger = logging.getLogger(__name__)
 
@@ -121,7 +125,7 @@ class BaseTool(ABC):
 
     def execute(self, config: ToolConfig) -> ToolResult:
         """
-        Execute the tool with given configuration
+        Execute the tool with given configuration (Docker-aware)
 
         Args:
             config: ToolConfig object with execution parameters
@@ -129,8 +133,16 @@ class BaseTool(ABC):
         Returns:
             ToolResult object with execution results and parsed data
         """
+        # Check if running in Docker mode
+        if getattr(settings, 'BUG_BOUNTY_SETTINGS', {}).get('DOCKER_MODE', False):
+            return self._execute_docker(config)
+        else:
+            return self._execute_local(config)
+
+    def _execute_local(self, config: ToolConfig) -> ToolResult:
+        """Execute tool locally (legacy method)"""
         start_time = datetime.now()
-        self.logger.info("Starting {self.name} execution for target: %s", config.target)
+        self.logger.info(f"Starting {self.name} execution for target: {config.target}")
 
         # Validate target scope
         if not self.validate_target(config.target, config.scope_urls):
@@ -247,6 +259,145 @@ class BaseTool(ABC):
                 output_files=[],
                 parsed_results=[],
                 error_message=f"Execution failed: {e}"
+            )
+
+    def _execute_docker(self, config: ToolConfig) -> ToolResult:
+        """Execute tool in Docker container"""
+        start_time = datetime.now()
+        self.logger.info(f"Starting {self.name} Docker execution for target: {config.target}")
+
+        # Validate target scope
+        if not self.validate_target(config.target, config.scope_urls):
+            return ToolResult(
+                tool_name=self.name,
+                status=ToolStatus.FAILED,
+                exit_code=-1,
+                stdout="",
+                stderr="Target not in scope",
+                execution_time=0.0,
+                output_files=[],
+                parsed_results=[],
+                error_message="Target validation failed: not in scope"
+            )
+
+        # Setup output directory (host path)
+        output_dir = self.setup_output_directory(config.output_dir)
+        config.output_dir = output_dir
+
+        # Build command
+        try:
+            command = self.build_command(config)
+            self.logger.debug("Executing Docker command: %s", ' '.join(command))
+        except Exception as e:
+            return ToolResult(
+                tool_name=self.name,
+                status=ToolStatus.FAILED,
+                exit_code=-1,
+                stdout="",
+                stderr=str(e),
+                execution_time=0.0,
+                output_files=[],
+                parsed_results=[],
+                error_message=f"Command building failed: {e}"
+            )
+
+        # Execute in Docker container
+        try:
+            client = docker.from_env()
+            container_name = getattr(settings, 'BUG_BOUNTY_SETTINGS', {}).get('TOOLS_CONTAINER_NAME', 'bugbounty_tools')
+
+            # Get tools container
+            try:
+                container = client.containers.get(container_name)
+            except docker.errors.NotFound:
+                return ToolResult(
+                    tool_name=self.name,
+                    status=ToolStatus.FAILED,
+                    exit_code=-1,
+                    stdout="",
+                    stderr=f"Tools container '{container_name}' not found",
+                    execution_time=0.0,
+                    output_files=[],
+                    parsed_results=[],
+                    error_message="Docker tools container not available"
+                )
+
+            # Execute command in container
+            exec_result = container.exec_run(
+                cmd=command,
+                workdir='/app/scan_results',
+                environment={
+                    'TARGET': config.target,
+                    'OUTPUT_DIR': '/app/scan_results'
+                }
+            )
+
+            execution_time = (datetime.now() - start_time).total_seconds()
+
+            # Decode output
+            stdout = exec_result.output.decode('utf-8') if exec_result.output else ""
+            stderr = ""
+            exit_code = exec_result.exit_code
+
+            # Find output files
+            output_files = []
+            try:
+                for file_path in Path(output_dir).glob('*'):
+                    if file_path.is_file():
+                        output_files.append(str(file_path))
+            except Exception as e:
+                self.logger.warning(f"Error scanning output directory: {e}")
+
+            # Parse results
+            try:
+                parsed_results = self.parse_output(stdout, stderr, output_files)
+            except Exception as e:
+                self.logger.error("Output parsing failed: %s", e)
+                parsed_results = []
+
+            # Determine status
+            if exit_code == 0:
+                status = ToolStatus.COMPLETED
+                error_message = None
+            else:
+                status = ToolStatus.FAILED
+                error_message = f"Tool exited with code {exit_code}"
+
+            result = ToolResult(
+                tool_name=self.name,
+                status=status,
+                exit_code=exit_code,
+                stdout=stdout,
+                stderr=stderr,
+                execution_time=execution_time,
+                output_files=output_files,
+                parsed_results=parsed_results,
+                error_message=error_message,
+                metadata={
+                    'execution_id': self.execution_id,
+                    'command': ' '.join(command),
+                    'output_directory': output_dir,
+                    'container_name': container_name,
+                    'execution_mode': 'docker'
+                }
+            )
+
+            self.logger.info(f"{self.name} completed in {execution_time:.2f}s with {len(parsed_results)} results")
+            return result
+
+        except Exception as e:
+            execution_time = (datetime.now() - start_time).total_seconds()
+            self.logger.error("Docker tool execution failed: %s", e)
+            return ToolResult(
+                tool_name=self.name,
+                status=ToolStatus.FAILED,
+                exit_code=-1,
+                stdout="",
+                stderr=str(e),
+                execution_time=execution_time,
+                output_files=[],
+                parsed_results=[],
+                error_message=f"Docker execution failed: {e}"
             )
 
     def get_version(self) -> Optional[str]:

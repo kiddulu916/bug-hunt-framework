@@ -3,61 +3,135 @@ Pydantic schemas for target management.
 Defines data validation and serialization models for target-related API endpoints.
 """
 
-from typing import List, Optional, Dict, Any, Union
-from pydantic import BaseModel, Field, validator, root_validator, HttpUrl
 from datetime import datetime
-from ipaddress import IPv4Address, IPv6Address
-
+from typing import List, Optional, Dict, Any, Union
+from pydantic import (
+    BaseModel,
+    Field,
+    model_validator,
+    HttpUrl,
+    field_validator
+)
 from apps.targets.models import BugBountyPlatform
 from core.security import InputValidator
-
 input_validator = InputValidator()
+
 
 class TargetBase(BaseModel):
     """Base schema for target data."""
 
-    target_name: str = Field(..., min_length=3, max_length=255, description="Target name")
+    target_name: str = Field(
+        ...,
+        min_length=3,
+        max_length=255,
+        description="Target name"
+        )
     platform: BugBountyPlatform = Field(..., description="Bug bounty platform")
-    researcher_username: str = Field(..., min_length=3, max_length=100, description="Researcher username on platform")
+    researcher_username: str = Field(
+        ...,
+        min_length=3,
+        max_length=100,
+        description="Researcher username on platform"
+        )
     main_url: HttpUrl = Field(..., description="Primary target URL")
-    wildcard_url: Optional[HttpUrl] = Field(None, description="Wildcard URL pattern")
-    in_scope_urls: List[str] = Field(default_factory=list, description="In-scope URL patterns")
-    out_of_scope_urls: List[str] = Field(default_factory=list, description="Out-of-scope URL patterns")
-    in_scope_assets: List[str] = Field(default_factory=list, description="In-scope asset patterns")
-    out_of_scope_assets: List[str] = Field(default_factory=list, description="Out-of-scope asset patterns")
-    requests_per_second: float = Field(5.0, ge=0.1, le=100.0, description="Request rate limit")
-    concurrent_requests: int = Field(10, ge=1, le=100, description="Concurrent request limit")
-    request_delay_ms: int = Field(200, ge=0, le=10000, description="Delay between requests in milliseconds")
-    required_headers: Dict[str, str] = Field(default_factory=dict, description="Required HTTP headers")
-    authentication_headers: Dict[str, str] = Field(default_factory=dict, description="Authentication headers")
-    user_agents: List[str] = Field(default_factory=lambda: ["BugBountyBot/1.0"], description="User agent strings")
-    program_notes: Optional[str] = Field(None, max_length=2000, description="Program-specific notes")
-    special_requirements: Optional[str] = Field(None, max_length=2000, description="Special testing requirements")
-    pii_redaction_rules: Dict[str, Any] = Field(default_factory=dict, description="PII redaction configuration")
+    wildcard_url: Optional[HttpUrl] = Field(
+        None,
+        description="Wildcard URL pattern"
+        )
+    in_scope_urls: List[str] = Field(
+        default_factory=list,
+        description="In-scope URL patterns"
+        )
+    out_of_scope_urls: List[str] = Field(
+        default_factory=list,
+        description="Out-of-scope URL patterns"
+        )
+    in_scope_assets: List[str] = Field(
+        default_factory=list,
+        description="In-scope asset patterns"
+        )
+    out_of_scope_assets: List[str] = Field(
+        default_factory=list,
+        description="Out-of-scope asset patterns"
+        )
+    requests_per_second: float = Field(
+        5.0,
+        ge=0.1, le=100.0,
+        description="Request rate limit"
+        )
+    concurrent_requests: int = Field(
+        10,
+        ge=1,
+        le=100,
+        description="Concurrent request limit"
+        )
+    request_delay_ms: int = Field(
+        200,
+        ge=0,
+        le=10000,
+        description="Delay between requests in milliseconds"
+        )
+    required_headers: Dict[str, str] = Field(
+        default_factory=dict,
+        description="Required HTTP headers"
+        )
+    authentication_headers: Dict[str, str] = Field(
+        default_factory=dict,
+        description="Authentication headers"
+        )
+    user_agents: List[str] = Field(
+        default_factory=lambda: ["BugBountyBot/1.0"],
+        description="User agent strings"
+        )
+    program_notes: Optional[str] = Field(
+        None,
+        max_length=2000,
+        description="Program-specific notes"
+        )
+    special_requirements: Optional[str] = Field(
+        None,
+        max_length=2000,
+        description="Special testing requirements"
+        )
+    pii_redaction_rules: Dict[str, Any] = Field(
+        default_factory=dict,
+        description="PII redaction configuration"
+        )
 
-    @validator('target_name')
+    @field_validator('target_name')
+    @classmethod
     def validate_target_name(cls, v):
         """Validate target name format."""
         if not input_validator.validate_target_name(v):
             raise ValueError('Invalid target name format')
         return v
 
-    @validator('in_scope_urls', 'out_of_scope_urls', each_item=True)
+    @field_validator('in_scope_urls', 'out_of_scope_urls')
+    @classmethod
     def validate_url_patterns(cls, v):
         """Validate URL patterns."""
-        # Basic URL pattern validation - can be extended
-        if not v.strip():
-            raise ValueError('URL pattern cannot be empty')
-        return v.strip()
+        if not isinstance(v, list):
+            raise ValueError('URL patterns must be a list')
 
-    @validator('user_agents')
+        validated_urls = []
+        for url_pattern in v:
+            if isinstance(url_pattern, str):
+                url_pattern = url_pattern.strip()
+                if url_pattern:  # Only add non-empty patterns
+                    validated_urls.append(url_pattern)
+
+        return validated_urls
+
+    @field_validator('user_agents')
+    @classmethod
     def validate_user_agents(cls, v):
         """Ensure at least one user agent is provided."""
         if not v:
             return ["BugBountyBot/1.0"]
         return [ua.strip() for ua in v if ua.strip()]
 
-    @root_validator
+    @model_validator(mode="after")
+    @classmethod
     def validate_scope_consistency(cls, values):
         """Validate that scope configuration is consistent."""
         in_scope_urls = values.get('in_scope_urls', [])
@@ -67,9 +141,13 @@ class TargetBase(BaseModel):
         for in_scope in in_scope_urls:
             for out_scope in out_of_scope_urls:
                 if in_scope == out_scope:
-                    raise ValueError(f'URL pattern "{in_scope}" cannot be both in-scope and out-of-scope')
+                    raise ValueError(
+                        f'URL pattern "{in_scope}" \
+                        cannot be both in-scope and out-of-scope'
+                        )
 
         return values
+
 
 class TargetCreate(TargetBase):
     """Schema for creating a new target."""
@@ -109,17 +187,24 @@ class TargetCreate(TargetBase):
                 "authentication_headers": {
                     "Authorization": "Bearer token123"
                 },
-                "program_notes": "Standard web application testing program with comprehensive scope",
-                "special_requirements": "Avoid testing during business hours (9-5 EST)"
+                "program_notes": "Standard web application testing \
+                                  program with comprehensive scope",
+                "special_requirements": "Avoid testing during business hours \
+                                        (9-5 EST). Test during business hours"
             }
         }
+
 
 class TargetUpdate(BaseModel):
     """Schema for updating target data."""
 
     target_name: Optional[str] = Field(None, min_length=3, max_length=255)
     platform: Optional[BugBountyPlatform] = None
-    researcher_username: Optional[str] = Field(None, min_length=3, max_length=100)
+    researcher_username: Optional[str] = Field(
+        None,
+        min_length=3,
+        max_length=100
+        )
     main_url: Optional[HttpUrl] = None
     wildcard_url: Optional[HttpUrl] = None
     in_scope_urls: Optional[List[str]] = None
@@ -137,21 +222,36 @@ class TargetUpdate(BaseModel):
     pii_redaction_rules: Optional[Dict[str, Any]] = None
     is_active: Optional[bool] = None
 
-    @validator('target_name')
+    @field_validator('target_name')
+    @classmethod
     def validate_target_name(cls, v):
+        """Validate target name format."""
         if v is not None and not input_validator.validate_target_name(v):
             raise ValueError('Invalid target name format')
         return v
+
 
 class TargetResponse(TargetBase):
     """Schema for target response data."""
 
     id: str = Field(..., description="Target ID")
-    is_active: bool = Field(True, description="Whether target is active for scanning")
+    is_active: bool = Field(
+        True,
+        description="Whether target is active for scanning"
+        )
     created_at: datetime = Field(..., description="Creation timestamp")
     updated_at: datetime = Field(..., description="Last update timestamp")
 
+    @field_validator('id')
+    @classmethod
+    def validate_id(cls, v):
+        """Validate target ID format."""
+        if not input_validator.validate_uuid(v):
+            raise ValueError('Invalid target ID format')
+        return v
+
     class Config:
+        """Config for target response."""
         orm_mode = True
         schema_extra = {
             "example": {
@@ -177,12 +277,16 @@ class TargetResponse(TargetBase):
             }
         }
 
+
 class TargetListResponse(BaseModel):
     """Schema for paginated target list response."""
 
     targets: List[TargetResponse] = Field(..., description="List of targets")
     pagination: Dict[str, Any] = Field(..., description="Pagination metadata")
-    platform_counts: Dict[str, int] = Field(default_factory=dict, description="Count by platform")
+    platform_counts: Dict[str, int] = Field(
+        default_factory=dict,
+        description="Count by platform"
+        )
     total_active: int = Field(0, description="Total active targets")
 
     class Config:
@@ -206,6 +310,7 @@ class TargetListResponse(BaseModel):
                 "total_active": 23
             }
         }
+
 
 class ScopeValidation(BaseModel):
     """Schema for scope validation results."""
@@ -373,7 +478,8 @@ class TargetFilter(BaseModel):
     min_request_rate: Optional[float] = Field(None, ge=0.1, description="Minimum request rate")
     max_request_rate: Optional[float] = Field(None, le=100.0, description="Maximum request rate")
 
-    @root_validator
+    @model_validator(mode="after")
+    @classmethod
     def validate_date_ranges(cls, values):
         """Validate date range consistency."""
         created_after = values.get('created_after')
@@ -389,7 +495,8 @@ class TargetFilter(BaseModel):
 
         return values
 
-    @root_validator
+    @model_validator(mode="after")
+    @classmethod
     def validate_rate_range(cls, values):
         """Validate request rate range."""
         min_rate = values.get('min_request_rate')
@@ -404,7 +511,7 @@ class ScopeRule(BaseModel):
     """Schema for individual scope rule."""
 
     pattern: str = Field(..., min_length=1, description="URL or asset pattern")
-    rule_type: str = Field(..., regex=r'^(url|ip|domain|wildcard)', description="Type of scope rule")
+    rule_type: str = Field(..., pattern=r'^(url|ip|domain|wildcard)', description="Type of scope rule")
     is_inclusive: bool = Field(..., description="True for in-scope, False for out-of-scope")
     description: Optional[str] = Field(None, description="Rule description")
     priority: int = Field(0, description="Rule priority (higher = more important)")
@@ -414,7 +521,7 @@ class ScopeConfiguration(BaseModel):
 
     target_id: str = Field(..., description="Target ID")
     rules: List[ScopeRule] = Field(..., description="List of scope rules")
-    default_policy: str = Field("deny", regex=r'^(allow|deny)', description="Default policy for unlisted assets")
+    default_policy: str = Field("deny", pattern=r'^(allow|deny)', description="Default policy for unlisted assets")
     validation_notes: Optional[str] = Field(None, description="Notes about scope validation")
     last_updated: datetime = Field(default_factory=datetime.utcnow, description="Last update timestamp")
 
@@ -423,7 +530,7 @@ class TargetHealth(BaseModel):
 
     target_id: str = Field(..., description="Target ID")
     is_healthy: bool = Field(..., description="Overall health status")
-    connectivity_status: str = Field(..., regex=r'^(online|offline|degraded|unknown)', description="Connectivity status")
+    connectivity_status: str = Field(..., pattern=r'^(online|offline|degraded|unknown)', description="Connectivity status")
     last_successful_scan: Optional[datetime] = Field(None, description="Last successful scan timestamp")
     last_connectivity_check: datetime = Field(..., description="Last connectivity check timestamp")
     health_issues: List[str] = Field(default_factory=list, description="List of detected health issues")
@@ -433,7 +540,7 @@ class BulkTargetOperation(BaseModel):
     """Schema for bulk operations on targets."""
 
     target_ids: List[str] = Field(..., min_items=1, description="List of target IDs")
-    operation: str = Field(..., regex=r'^(activate|deactivate|update_rate_limit|delete)', description="Operation to perform")
+    operation: str = Field(..., pattern=r'^(activate|deactivate|update_rate_limit|delete)', description="Operation to perform")
     parameters: Dict[str, Any] = Field(default_factory=dict, description="Operation-specific parameters")
 
     class Config:
@@ -455,7 +562,7 @@ class TargetExport(BaseModel):
     """Schema for target export data."""
 
     targets: List[TargetResponse] = Field(..., description="Targets to export")
-    export_format: str = Field(..., regex=r'^(csv|json|xml)', description="Export format")
+    export_format: str = Field(..., pattern=r'^(csv|json|xml)', description="Export format")
     include_statistics: bool = Field(False, description="Include target statistics")
     include_scope_rules: bool = Field(True, description="Include detailed scope rules")
     filters: Dict[str, Any] = Field(default_factory=dict, description="Applied filters")

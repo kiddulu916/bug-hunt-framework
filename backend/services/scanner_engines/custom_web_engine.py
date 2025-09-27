@@ -12,7 +12,7 @@ from urllib.parse import urlparse, parse_qs, urljoin
 import aiohttp
 import time
 
-from backend.services.vulnerability_scanner import VulnerabilityFinding, ScanEngineType, VulnSeverity
+from services.vulnerability_scanner import VulnerabilityFinding, ScanEngineType, VulnSeverity
 
 
 class CustomWebEngine:

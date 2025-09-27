@@ -19,10 +19,12 @@ from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.dialects.postgresql import UUID
 from sqlalchemy.orm import Session
 
-from backend.models import Base, Target, ScanSession, ReconResult, ScanStatus
-from backend.core.database import get_db_session
-from backend.services.notification_service import NotificationService
-from backend.services.vulnerability_scanner import VulnerabilityScanner
+from apps.targets.models import Target
+from apps.scanning.models import ScanSession, ScanStatus
+from apps.reconnaissance.models import ReconResult
+from core.database import get_db_session, Base
+from services.notification_service import NotificationService
+from services.vulnerability_scanner import VulnerabilityScanner
 
 
 class ScheduleType(Enum):

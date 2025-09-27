@@ -4,7 +4,7 @@ Defines data validation and serialization models for report-related API endpoint
 """
 
 from typing import List, Optional, Dict, Any, Union
-from pydantic import BaseModel, Field, validator, root_validator
+from pydantic import BaseModel, Field, field_validator, model_validator
 from datetime import datetime
 from enum import Enum
 
@@ -20,7 +20,8 @@ class ReportBase(BaseModel):
     methodology_used: Optional[str] = Field(None, max_length=2000, description="Methodology description")
     recommendations: Optional[str] = Field(None, description="Recommendations section")
 
-    @validator('report_type')
+    @field_validator('report_type')
+    @classmethod
     def validate_report_type(cls, v):
         """Validate report type against known types."""
         if v not in REPORT_TYPES:
@@ -37,7 +38,8 @@ class ReportCreate(ReportBase):
     pii_redaction: bool = Field(True, description="Apply PII redaction")
     custom_sections: List[Dict[str, str]] = Field(default_factory=list, description="Custom report sections")
 
-    @validator('template_name')
+    @field_validator('template_name')
+    @classmethod
     def validate_template_name(cls, v):
         if v is not None and v not in REPORT_TEMPLATES:
             raise ValueError(f'Invalid template name. Must be one of: {", ".join(REPORT_TEMPLATES.keys())}')
@@ -77,7 +79,8 @@ class ReportUpdate(BaseModel):
     methodology_used: Optional[str] = Field(None, max_length=2000)
     recommendations: Optional[str] = None
 
-    @validator('report_type')
+    @field_validator('report_type')
+    @classmethod
     def validate_report_type(cls, v):
         if v is not None and v not in REPORT_TYPES:
             raise ValueError(f'Invalid report type. Must be one of: {", ".join(REPORT_TYPES)}')
@@ -186,7 +189,7 @@ class ReportGeneration(BaseModel):
 
     # PII and security
     pii_redaction: bool = Field(True, description="Apply PII redaction")
-    redaction_level: str = Field("standard", regex=r'^(minimal|standard|aggressive)$', description="Redaction level")
+    redaction_level: str = Field("standard", pattern=r'^(minimal|standard|aggressive)$', description="Redaction level")
     watermark_text: Optional[str] = Field(None, description="Watermark text")
 
     # Metadata
@@ -195,22 +198,29 @@ class ReportGeneration(BaseModel):
     progress: Optional[float] = Field(None, ge=0.0, le=100.0, description="Generation progress")
     estimated_completion: Optional[datetime] = Field(None, description="Estimated completion time")
 
-    @validator('report_type')
+    @field_validator('report_type')
+    @classmethod
     def validate_report_type(cls, v):
         if v not in REPORT_TYPES:
             raise ValueError(f'Invalid report type. Must be one of: {", ".join(REPORT_TYPES)}')
         return v
 
-    @validator('template_name')
+    @field_validator('template_name')
+    @classmethod
     def validate_template_name(cls, v):
         if v not in REPORT_TEMPLATES:
             raise ValueError(f'Invalid template name. Must be one of: {", ".join(REPORT_TEMPLATES.keys())}')
         return v
 
-    @validator('output_formats', each_item=True)
+    @field_validator('output_formats')
+    @classmethod
     def validate_output_formats(cls, v):
-        if v not in REPORT_FORMATS:
-            raise ValueError(f'Invalid output format. Must be one of: {", ".join(REPORT_FORMATS)}')
+        if not isinstance(v, list):
+            raise ValueError('Output formats must be a list')
+
+        for format_item in v:
+            if format_item not in REPORT_FORMATS:
+                raise ValueError(f'Invalid output format: {format_item}. Must be one of: {", ".join(REPORT_FORMATS)}')
         return v
 
     class Config:
@@ -278,7 +288,7 @@ class ReportExport(BaseModel):
     """Schema for report data export."""
 
     report_id: str = Field(..., description="Source report ID")
-    format: str = Field(..., regex=r'^(json|xml|csv)$', description="Export format")
+    format: str = Field(..., pattern=r'^(json|xml|csv)$', description="Export format")
     data: Dict[str, Any] = Field(..., description="Exported report data")
     metadata: Dict[str, Any] = Field(default_factory=dict, description="Export metadata")
     exported_at: datetime = Field(..., description="Export timestamp")
@@ -321,19 +331,34 @@ class ReportFilter(BaseModel):
     pii_redacted: Optional[bool] = Field(None, description="Filter by PII redaction status")
     file_formats: Optional[List[str]] = Field(None, description="Filter by available file formats")
 
-    @validator('report_types', each_item=True)
+    @field_validator('report_types')
+    @classmethod
     def validate_report_types(cls, v):
-        if v not in REPORT_TYPES:
-            raise ValueError(f'Invalid report type. Must be one of: {", ".join(REPORT_TYPES)}')
+        if v is None:
+            return v
+        if not isinstance(v, list):
+            raise ValueError('Report types must be a list')
+
+        for report_type in v:
+            if report_type not in REPORT_TYPES:
+                raise ValueError(f'Invalid report type: {report_type}. Must be one of: {", ".join(REPORT_TYPES)}')
         return v
 
-    @validator('file_formats', each_item=True)
+    @field_validator('file_formats')
+    @classmethod
     def validate_file_formats(cls, v):
-        if v not in REPORT_FORMATS:
-            raise ValueError(f'Invalid file format. Must be one of: {", ".join(REPORT_FORMATS)}')
+        if v is None:
+            return v
+        if not isinstance(v, list):
+            raise ValueError('File formats must be a list')
+
+        for file_format in v:
+            if file_format not in REPORT_FORMATS:
+                raise ValueError(f'Invalid file format: {file_format}. Must be one of: {", ".join(REPORT_FORMATS)}')
         return v
 
-    @root_validator
+    @model_validator(mode="after")
+    @classmethod
     def validate_date_range(cls, values):
         generated_after = values.get('generated_after')
         generated_before = values.get('generated_before')
@@ -343,7 +368,8 @@ class ReportFilter(BaseModel):
 
         return values
 
-    @root_validator
+    @model_validator(mode="after")
+    @classmethod
     def validate_vulnerability_range(cls, values):
         min_vulns = values.get('min_vulnerabilities')
         max_vulns = values.get('max_vulnerabilities')
@@ -400,7 +426,7 @@ class BulkReportOperation(BaseModel):
     """Schema for bulk operations on reports."""
 
     report_ids: List[str] = Field(..., min_items=1, description="List of report IDs")
-    operation: str = Field(..., regex=r'^(regenerate|delete|export|update_redaction)', description="Operation to perform")
+    operation: str = Field(..., pattern=r'^(regenerate|delete|export|update_redaction)', description="Operation to perform")
     parameters: Dict[str, Any] = Field(default_factory=dict, description="Operation-specific parameters")
 
     class Config:
@@ -443,7 +469,7 @@ class ReportDelivery(BaseModel):
     """Schema for report delivery configuration."""
 
     report_id: str = Field(..., description="Report ID to deliver")
-    delivery_method: str = Field(..., regex=r'^(email|webhook|ftp|api)', description="Delivery method")
+    delivery_method: str = Field(..., pattern=r'^(email|webhook|ftp|api)', description="Delivery method")
     recipients: List[str] = Field(..., min_items=1, description="Delivery recipients")
     delivery_options: Dict[str, Any] = Field(default_factory=dict, description="Method-specific options")
     schedule: Optional[str] = Field(None, description="Delivery schedule (cron expression)")
@@ -451,10 +477,15 @@ class ReportDelivery(BaseModel):
     encryption_required: bool = Field(False, description="Whether encryption is required")
     delivery_confirmation: bool = Field(True, description="Whether to send delivery confirmation")
 
-    @validator('format_preferences', each_item=True)
+    @field_validator('format_preferences')
+    @classmethod
     def validate_format_preferences(cls, v):
-        if v not in REPORT_FORMATS:
-            raise ValueError(f'Invalid format. Must be one of: {", ".join(REPORT_FORMATS)}')
+        if not isinstance(v, list):
+            raise ValueError('Format preferences must be a list')
+
+        for format_pref in v:
+            if format_pref not in REPORT_FORMATS:
+                raise ValueError(f'Invalid format: {format_pref}. Must be one of: {", ".join(REPORT_FORMATS)}')
         return v
 
 class ReportQuality(BaseModel):
@@ -485,12 +516,12 @@ class ReportApproval(BaseModel):
     """Schema for report approval workflow."""
 
     report_id: str = Field(..., description="Report ID")
-    approval_status: str = Field(..., regex=r'^(pending|approved|rejected|revision_required)', description="Approval status")
+    approval_status: str = Field(..., pattern=r'^(pending|approved|rejected|revision_required)', description="Approval status")
     reviewer: str = Field(..., description="Report reviewer")
     review_comments: Optional[str] = Field(None, description="Review comments")
     approval_date: Optional[datetime] = Field(None, description="Approval timestamp")
     revision_requests: List[str] = Field(default_factory=list, description="Specific revision requests")
-    approval_level: str = Field(..., regex=r'^(technical|management|client)', description="Approval level")
+    approval_level: str = Field(..., pattern=r'^(technical|management|client)', description="Approval level")
     next_reviewer: Optional[str] = Field(None, description="Next person in approval chain")
 
 class ReportMetadata(BaseModel):
@@ -501,7 +532,7 @@ class ReportMetadata(BaseModel):
     version: str = Field("1.0", description="Report version")
     author: str = Field(..., description="Report author")
     reviewers: List[str] = Field(default_factory=list, description="Report reviewers")
-    classification: str = Field("internal", regex=r'^(public|internal|confidential|restricted)', description="Security classification")
+    classification: str = Field("internal", pattern=r'^(public|internal|confidential|restricted)', description="Security classification")
     tags: List[str] = Field(default_factory=list, description="Report tags")
     related_reports: List[str] = Field(default_factory=list, description="Related report IDs")
     retention_period: Optional[int] = Field(None, ge=1, description="Retention period in days")

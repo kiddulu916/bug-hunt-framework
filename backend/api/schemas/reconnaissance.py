@@ -23,7 +23,8 @@ class ReconConfigSchema(BaseModel):
     wordlist_size: str = Field("medium", description="Wordlist size for brute force")
     timeout_seconds: int = Field(30, ge=5, le=300, description="Operation timeout in seconds")
     
-    @validator('wordlist_size')
+    @field_validator('wordlist_size')
+    @classmethod
     def validate_wordlist_size(cls, v):
         if v not in ['small', 'medium', 'large']:
             raise ValueError('wordlist_size must be one of: small, medium, large')
@@ -136,7 +137,8 @@ class ReconExportRequest(BaseModel):
     include_out_of_scope: bool = Field(False, description="Include out-of-scope results")
     result_types: Optional[List[str]] = Field(None, description="Filter by result types")
     
-    @validator('format')
+    @field_validator('format')
+    @classmethod
     def validate_format(cls, v):
         if v.lower() not in ['json', 'csv']:
             raise ValueError('format must be either json or csv')
@@ -241,7 +243,8 @@ class ActiveReconConfigSchema(BaseModel):
     max_endpoints: int = Field(5000, ge=1, le=50000)
     timeout_seconds: int = Field(30, ge=5, le=300)
     
-    @validator('wordlist_size')
+    @field_validator('wordlist_size')
+    @classmethod
     def validate_wordlist_size(cls, v):
         if v not in ['small', 'medium', 'large']:
             raise ValueError('wordlist_size must be one of: small, medium, large')
@@ -286,7 +289,8 @@ class ReconValidationSchema(BaseModel):
     validated_by: str
     validated_at: datetime
     
-    @validator('validation_status')
+    @field_validator('validation_status')
+    @classmethod
     def validate_status(cls, v):
         if v not in ['valid', 'invalid', 'needs_review']:
             raise ValueError('validation_status must be one of: valid, invalid, needs_review')

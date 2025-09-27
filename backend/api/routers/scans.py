@@ -24,7 +24,7 @@ from api.schemas.scan import (
     ToolExecutionResponse,
     ScanQueryFilters
 )
-from apps.scans.models import ScanSession, ScanStatus, ToolExecution, ToolStatus
+from apps.scanning.models import ScanSession, ScanStatus, ToolExecution, ToolStatus
 from apps.targets.models import Target
 from core.pagination import ScanFastAPIPagination
 from core.exceptions import (
@@ -51,7 +51,7 @@ async def list_scan_sessions(
     target_id: Optional[str] = Query(None, description="Filter by target ID"),
     search: Optional[str] = Query(None, description="Search in session names"),
     sort_by: str = Query("created_at", description="Sort field"),
-    sort_order: str = Query("desc", regex="^(asc|desc)$", description="Sort order"),
+    sort_order: str = Query("desc", pattern="^(asc|desc)$", description="Sort order"),
     db: Session = Depends(get_db),
     current_user: dict = Depends(get_current_user)
 ):

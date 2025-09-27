@@ -23,8 +23,8 @@ from api.schemas.report import (
     ReportTemplate,
     ReportExport
 )
-from apps.reports.models import Report
-from apps.scans.models import ScanSession
+from apps.reporting.models import Report
+from apps.scanning.models import ScanSession
 from core.pagination import FastAPIPagination
 from core.exceptions import (
     RecordNotFoundException,
@@ -48,7 +48,7 @@ async def list_reports(
     scan_session_id: Optional[str] = Query(None, description="Filter by scan session ID"),
     search: Optional[str] = Query(None, description="Search in report names"),
     sort_by: str = Query("generated_at", description="Sort field"),
-    sort_order: str = Query("desc", regex="^(asc|desc)$", description="Sort order"),
+    sort_order: str = Query("desc", pattern="^(asc|desc)$", description="Sort order"),
     db: Session = Depends(get_db),
     current_user: dict = Depends(get_current_user)
 ):
@@ -254,7 +254,7 @@ async def delete_report(
 @router.get("/{report_id}/download/{format}")
 async def download_report(
     report_id: str = Path(..., description="Report ID"),
-    format: str = Path(..., regex="^(pdf|html|json)$", description="Download format"),
+    format: str = Path(..., pattern="^(pdf|html|json)$", description="Download format"),
     db: Session = Depends(get_db),
     current_user: dict = Depends(get_current_user)
 ):
@@ -476,7 +476,7 @@ async def get_report_template(
 @router.post("/{report_id}/export", response_model=ReportExport)
 async def export_report_data(
     report_id: str = Path(..., description="Report ID"),
-    export_format: str = Query("json", regex="^(json|xml|csv)$", description="Export format"),
+    export_format: str = Query("json", pattern="^(json|xml|csv)$", description="Export format"),
     include_raw_data: bool = Query(False, description="Include raw scan data"),
     db: Session = Depends(get_db),
     current_user: dict = Depends(get_current_user)

@@ -17,274 +17,104 @@ Main Components:
 __version__ = "1.0.0"
 __author__ = "Bug Bounty Automation Platform"
 
-# Import core engine classes
-from .recon_engine import (
-    ReconEngine,
-    SubdomainEnumerator,
-    PortScanner,
-    ServiceIdentifier,
-    TechnologyProfiler,
-    AssetDiscovery,
-)
+# Import available scanner engines
+try:
+    from .custom_api_engine import CustomAPIEngine
+except ImportError:
+    CustomAPIEngine = None
 
-from .vulnerability_scanner import (
-    VulnerabilityScanner,
-    NucleiScanner,
-    BurpScanner,
-    CustomVulnScanner,
-    PayloadGenerator,
-    FuzzingEngine,
-)
+try:
+    from .custom_infra_engine import CustomInfraEngine
+except ImportError:
+    CustomInfraEngine = None
 
-from .exploitation_engine import (
-    ExploitationEngine,
-    ExploitChainBuilder,
-    PayloadExecutor,
-    ImpactAnalyzer,
-    ProofOfConceptGenerator,
-)
+try:
+    from .custom_web_engine import CustomWebEngine
+except ImportError:
+    CustomWebEngine = None
 
-from .report_generator import (
-    ReportGenerator,
-    TechnicalReportBuilder,
-    ExecutiveReportBuilder,
-    BugBountyReportFormatter,
-    PIIRedactor,
-    EvidenceCollector,
-)
+try:
+    from .nuclei_engine import NucleiEngine
+except ImportError:
+    NucleiEngine = None
 
-from .scan_orchestrator import (
-    ScanOrchestrator,
-    ScanScheduler,
-    WorkflowManager,
-    ProgressTracker,
-    RateLimiter,
-)
+try:
+    from .recon_engine import ReconEngine
+except ImportError:
+    ReconEngine = None
 
-# Import utility modules
-from .utils import (
-    ScopeValidator,
-    RequestBuilder,
-    ResponseParser,
-    ToolExecutor,
-    OutputParser,
-    LogManager,
-)
+try:
+    from .scan_orchestrator import ScanOrchestrator
+except ImportError:
+    ScanOrchestrator = None
 
-# Import tool integrations
-from .tools import (
-    AmassIntegration,
-    SubfinderIntegration,
-    NmapIntegration,
-    MasscanIntegration,
-    NucleiIntegration,
-    FFUFIntegration,
-    SQLMapIntegration,
-    MetasploitIntegration,
-    BurpSuiteAPI,
-    ZAPIntegration,
-)
-
-# Import database interfaces
-from .db_interfaces import (
-    TargetManager,
-    ScanSessionManager,
-    VulnerabilityManager,
-    ReconResultManager,
-    ReportManager,
-    ToolExecutionLogger,
-)
-
-# Import configuration management
-from .config import (
-    ScannerConfig,
-    ToolConfig,
-    RateLimitConfig,
-    AuthenticationConfig,
-    load_scanner_config,
-    validate_config,
-)
-
-# Import monitoring and metrics
-from .monitoring import (
-    ScanMetrics,
-    PerformanceMonitor,
-    ErrorTracker,
-    ProgressReporter,
-    AlertManager,
-)
-
-# Define public API
+# Define public API - only include available modules
 __all__ = [
     # Version info
     "__version__",
     "__author__",
-    
-    # Core Engines
+
+    # Available Scanner Engines
+    "CustomAPIEngine",
+    "CustomInfraEngine",
+    "CustomWebEngine",
+    "NucleiEngine",
     "ReconEngine",
-    "SubdomainEnumerator",
-    "PortScanner",
-    "ServiceIdentifier",
-    "TechnologyProfiler",
-    "AssetDiscovery",
-    
-    # Vulnerability Scanning
-    "VulnerabilityScanner",
-    "NucleiScanner",
-    "BurpScanner",
-    "CustomVulnScanner",
-    "PayloadGenerator",
-    "FuzzingEngine",
-    
-    # Exploitation
-    "ExploitationEngine",
-    "ExploitChainBuilder",
-    "PayloadExecutor",
-    "ImpactAnalyzer",
-    "ProofOfConceptGenerator",
-    
-    # Reporting
-    "ReportGenerator",
-    "TechnicalReportBuilder",
-    "ExecutiveReportBuilder",
-    "BugBountyReportFormatter",
-    "PIIRedactor",
-    "EvidenceCollector",
-    
-    # Orchestration
     "ScanOrchestrator",
-    "ScanScheduler",
-    "WorkflowManager",
-    "ProgressTracker",
-    "RateLimiter",
-    
-    # Utilities
-    "ScopeValidator",
-    "RequestBuilder",
-    "ResponseParser",
-    "ToolExecutor",
-    "OutputParser",
-    "LogManager",
-    
-    # Tool Integrations
-    "AmassIntegration",
-    "SubfinderIntegration",
-    "NmapIntegration",
-    "MasscanIntegration",
-    "NucleiIntegration",
-    "FFUFIntegration",
-    "SQLMapIntegration",
-    "MetasploitIntegration",
-    "BurpSuiteAPI",
-    "ZAPIntegration",
-    
-    # Database Interfaces
-    "TargetManager",
-    "ScanSessionManager",
-    "VulnerabilityManager",
-    "ReconResultManager",
-    "ReportManager",
-    "ToolExecutionLogger",
-    
-    # Configuration
-    "ScannerConfig",
-    "ToolConfig",
-    "RateLimitConfig",
-    "AuthenticationConfig",
-    "load_scanner_config",
-    "validate_config",
-    
-    # Monitoring
-    "ScanMetrics",
-    "PerformanceMonitor",
-    "ErrorTracker",
-    "ProgressReporter",
-    "AlertManager",
-    
-    # Main factory functions
-    "create_scan_session",
+
+    # Factory functions
+    "get_available_engines",
     "get_scanner_engine",
-    "initialize_scanners",
 ]
 
 # Factory functions for easy instantiation
-def create_scan_session(target_id: str, config: dict = None) -> 'ScanOrchestrator':
+def get_available_engines():
     """
-    Factory function to create a new scan session with proper configuration.
-    
-    Args:
-        target_id: UUID of the target from the database
-        config: Optional configuration dictionary
-        
+    Get a list of available scanner engines.
+
     Returns:
-        Configured ScanOrchestrator instance
+        Dictionary of available engine classes
     """
-    from .scan_orchestrator import ScanOrchestrator
-    from .config import load_scanner_config
-    
-    if config is None:
-        config = load_scanner_config()
-    
-    orchestrator = ScanOrchestrator(target_id=target_id, config=config)
-    return orchestrator
+    available = {}
+
+    if CustomAPIEngine is not None:
+        available['custom_api'] = CustomAPIEngine
+    if CustomInfraEngine is not None:
+        available['custom_infra'] = CustomInfraEngine
+    if CustomWebEngine is not None:
+        available['custom_web'] = CustomWebEngine
+    if NucleiEngine is not None:
+        available['nuclei'] = NucleiEngine
+    if ReconEngine is not None:
+        available['recon'] = ReconEngine
+    if ScanOrchestrator is not None:
+        available['orchestrator'] = ScanOrchestrator
+
+    return available
 
 
 def get_scanner_engine(engine_type: str, **kwargs):
     """
     Factory function to get a specific scanner engine.
-    
+
     Args:
-        engine_type: Type of engine ('recon', 'vulnerability', 'exploitation', 'report')
+        engine_type: Type of engine ('custom_api', 'custom_web', 'custom_infra', 'nuclei', 'recon', 'orchestrator')
         **kwargs: Additional arguments for engine initialization
-        
+
     Returns:
         Appropriate engine instance
-        
+
     Raises:
-        ValueError: If engine_type is not recognized
+        ValueError: If engine_type is not recognized or not available
     """
-    engines = {
-        'recon': ReconEngine,
-        'vulnerability': VulnerabilityScanner,
-        'exploitation': ExploitationEngine,
-        'report': ReportGenerator,
-    }
-    
-    if engine_type not in engines:
-        raise ValueError(f"Unknown engine type: {engine_type}. "
-                        f"Valid types are: {list(engines.keys())}")
-    
-    engine_class = engines[engine_type]
+    available_engines = get_available_engines()
+
+    if engine_type not in available_engines:
+        raise ValueError(f"Unknown or unavailable engine type: {engine_type}. "
+                        f"Available types are: {list(available_engines.keys())}")
+
+    engine_class = available_engines[engine_type]
     return engine_class(**kwargs)
-
-
-def initialize_scanners(db_session, logger=None):
-    """
-    Initialize all scanner components with database session and logging.
-    
-    Args:
-        db_session: SQLAlchemy database session
-        logger: Optional logger instance
-        
-    Returns:
-        Dictionary containing initialized scanner components
-    """
-    from .utils import LogManager
-    
-    if logger is None:
-        logger = LogManager.get_logger(__name__)
-    
-    components = {
-        'target_manager': TargetManager(db_session, logger),
-        'session_manager': ScanSessionManager(db_session, logger),
-        'vulnerability_manager': VulnerabilityManager(db_session, logger),
-        'recon_manager': ReconResultManager(db_session, logger),
-        'report_manager': ReportManager(db_session, logger),
-        'tool_logger': ToolExecutionLogger(db_session, logger),
-    }
-    
-    logger.info("Scanner engines initialized successfully")
-    return components
 
 
 # Module-level initialization
@@ -360,7 +190,7 @@ class RateLimitExceeded(ScannerException):
     pass
 
 
-# Export exception classes
+# Add exception classes to exports
 __all__.extend([
     'ScannerException',
     'ConfigurationError',

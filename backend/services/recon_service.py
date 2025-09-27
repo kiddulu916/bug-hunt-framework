@@ -28,12 +28,11 @@ from celery import shared_task
 from sqlalchemy.orm import Session
 from sqlalchemy import and_, or_
 
-from backend.models import (
-    Target, ScanSession, ReconResult, ToolExecution,
-    ScanStatus, ToolStatus
-)
-from backend.core.database import get_db_session
-from backend.services.notification_service import NotificationService
+from apps.targets.models import Target
+from apps.scanning.models import ScanSession, ScanStatus
+from apps.reconnaissance.models import ReconResult as ReconResultModel
+from core.database import get_db_session
+from services.notification_service import NotificationService
 
 
 class ReconType(Enum):
@@ -1158,7 +1157,7 @@ class ReconService:
         # Check scope before storing
         is_in_scope = await self._validate_scope(result, scan_session_id, db)
         
-        recon_record = ReconResult(
+        recon_record = ReconResultModel(
             scan_session_id=scan_session_id,
             result_type=result.result_type.value,
             discovered_asset=result.discovered_asset,
@@ -1228,17 +1227,17 @@ class ReconService:
                                        in_scope_only: bool = True) -> List[Dict[str, Any]]:
         """Get reconnaissance results for a scan session"""
         with get_db_session() as db:
-            query = db.query(ReconResult).filter(
-                ReconResult.scan_session_id == scan_session_id
+            query = db.query(ReconResultModel).filter(
+                ReconResultModel.scan_session_id == scan_session_id
             )
-            
+
             if result_type:
-                query = query.filter(ReconResult.result_type == result_type)
-            
+                query = query.filter(ReconResultModel.result_type == result_type)
+
             if in_scope_only:
-                query = query.filter(ReconResult.is_in_scope == True)
-            
-            results = query.order_by(ReconResult.discovered_at.desc()).all()
+                query = query.filter(ReconResultModel.is_in_scope == True)
+
+            results = query.order_by(ReconResultModel.discovered_at.desc()).all()
             
             return [
                 {
@@ -1263,8 +1262,8 @@ class ReconService:
     async def get_reconnaissance_statistics(self, scan_session_id: str) -> Dict[str, Any]:
         """Get reconnaissance statistics for a scan session"""
         with get_db_session() as db:
-            results = db.query(ReconResult).filter(
-                ReconResult.scan_session_id == scan_session_id
+            results = db.query(ReconResultModel).filter(
+                ReconResultModel.scan_session_id == scan_session_id
             ).all()
             
             stats = {

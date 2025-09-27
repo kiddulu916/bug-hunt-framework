@@ -4,7 +4,7 @@ Defines reusable data validation and serialization models.
 """
 
 from typing import List, Optional, Dict, Any, Union, Generic, TypeVar
-from pydantic import BaseModel, Field, validator
+from pydantic import BaseModel, Field, field_validator
 from pydantic.generics import GenericModel
 from datetime import datetime
 from enum import Enum
@@ -94,7 +94,7 @@ class ErrorResponse(BaseModel):
 class HealthCheckResponse(BaseModel):
     """Schema for health check responses."""
 
-    status: str = Field(..., regex=r'^(healthy|unhealthy|degraded)$', description="Overall health status")
+    status: str = Field(..., pattern=r'^(healthy|unhealthy|degraded)$', description="Overall health status")
     service: str = Field(..., description="Service name")
     version: str = Field(..., description="Service version")
     timestamp: datetime = Field(default_factory=datetime.utcnow, description="Health check timestamp")
@@ -129,11 +129,12 @@ class SearchFilter(BaseModel):
     fields: Optional[List[str]] = Field(None, description="Fields to search in")
     filters: Optional[Dict[str, Any]] = Field(None, description="Additional filters")
     sort_by: Optional[str] = Field(None, description="Sort field")
-    sort_order: str = Field("asc", regex=r'^(asc|desc)$', description="Sort order")
+    sort_order: str = Field("asc", pattern=r'^(asc|desc)$', description="Sort order")
     date_from: Optional[datetime] = Field(None, description="Date range start")
     date_to: Optional[datetime] = Field(None, description="Date range end")
 
-    @validator('date_to')
+    @field_validator('date_to')
+    @classmethod
     def validate_date_range(cls, v, values):
         date_from = values.get('date_from')
         if date_from and v and date_from > v:
@@ -238,7 +239,7 @@ class FileUploadResponse(BaseModel):
 class ExportRequest(BaseModel):
     """Schema for data export requests."""
 
-    export_format: str = Field(..., regex=r'^(csv|json|xml|xlsx|pdf)$', description="Export format")
+    export_format: str = Field(..., pattern=r'^(csv|json|xml|xlsx|pdf)$', description="Export format")
     include_metadata: bool = Field(True, description="Include metadata in export")
     filters: Optional[Dict[str, Any]] = Field(None, description="Export filters")
     fields: Optional[List[str]] = Field(None, description="Specific fields to export")
@@ -272,7 +273,7 @@ class ExportResponse(BaseModel):
     download_url: Optional[str] = Field(None, description="Download URL")
     record_count: int = Field(..., ge=0, description="Number of exported records")
     file_size: Optional[int] = Field(None, ge=0, description="Export file size")
-    status: str = Field(..., regex=r'^(pending|processing|completed|failed)$', description="Export status")
+    status: str = Field(..., pattern=r'^(pending|processing|completed|failed)$', description="Export status")
     created_at: datetime = Field(default_factory=datetime.utcnow, description="Export creation timestamp")
     completed_at: Optional[datetime] = Field(None, description="Export completion timestamp")
     expires_at: Optional[datetime] = Field(None, description="Export expiration timestamp")
@@ -285,20 +286,25 @@ class NotificationSettings(BaseModel):
     notification_types: List[str] = Field(default_factory=list, description="Enabled notification types")
     email_addresses: List[str] = Field(default_factory=list, description="Notification email addresses")
     webhook_url: Optional[str] = Field(None, description="Webhook URL")
-    notification_frequency: str = Field("immediate", regex=r'^(immediate|daily|weekly)$', description="Notification frequency")
+    notification_frequency: str = Field("immediate", pattern=r'^(immediate|daily|weekly)$', description="Notification frequency")
 
-    @validator('email_addresses', each_item=True)
+    @field_validator('email_addresses')
+    @classmethod
     def validate_email_addresses(cls, v):
+        if not isinstance(v, list):
+            raise ValueError('Email addresses must be a list')
+
         import re
         email_pattern = r'^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$'
-        if not re.match(email_pattern, v):
-            raise ValueError('Invalid email address format')
+        for email in v:
+            if not re.match(email_pattern, email):
+                raise ValueError(f'Invalid email address format: {email}')
         return v
 
 class UserPreferences(BaseModel):
     """Schema for user preferences."""
 
-    theme: str = Field("light", regex=r'^(light|dark|auto)$', description="UI theme preference")
+    theme: str = Field("light", pattern=r'^(light|dark|auto)$', description="UI theme preference")
     language: str = Field("en", description="Language preference")
     timezone: str = Field("UTC", description="Timezone preference")
     items_per_page: int = Field(20, ge=10, le=100, description="Default items per page")
@@ -312,7 +318,7 @@ class SystemConfiguration(BaseModel):
     max_concurrent_scans: int = Field(5, ge=1, le=20, description="Maximum concurrent scans")
     default_scan_timeout: int = Field(3600, ge=300, le=86400, description="Default scan timeout in seconds")
     rate_limit_requests: int = Field(1000, ge=100, le=10000, description="Rate limit requests per hour")
-    log_level: str = Field("INFO", regex=r'^(DEBUG|INFO|WARNING|ERROR|CRITICAL)$', description="Logging level")
+    log_level: str = Field("INFO", pattern=r'^(DEBUG|INFO|WARNING|ERROR|CRITICAL)$', description="Logging level")
     backup_enabled: bool = Field(True, description="Automated backups enabled")
     retention_days: int = Field(90, ge=1, le=365, description="Data retention period in days")
 
@@ -334,7 +340,8 @@ class TimeRange(BaseModel):
     end: datetime = Field(..., description="Range end time")
     timezone: Optional[str] = Field(None, description="Timezone identifier")
 
-    @validator('end')
+    @field_validator('end')
+    @classmethod
     def validate_end_after_start(cls, v, values):
         start = values.get('start')
         if start and v <= start:

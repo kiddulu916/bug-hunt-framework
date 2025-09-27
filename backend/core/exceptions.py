@@ -62,6 +62,18 @@ class InvalidDataException(DatabaseException):
         super().__init__(message, "INVALID_DATA", {"field": field, "value": value, "reason": reason})
 
 
+class ValidationError(InvalidDataException):
+    """Alias for InvalidDataException for compatibility."""
+    pass
+
+
+class SecurityError(BugBountyPlatformException):
+    """Raised when security-related errors occur."""
+
+    def __init__(self, message: str, details: Optional[Dict[str, Any]] = None):
+        super().__init__(message, "SECURITY_ERROR", details)
+
+
 # Authentication and authorization exceptions
 
 class AuthenticationException(BugBountyPlatformException):
@@ -393,6 +405,8 @@ __all__ = [
     'RecordNotFoundException',
     'DuplicateRecordException',
     'InvalidDataException',
+    'ValidationError',
+    'SecurityError',
 
     # Authentication exceptions
     'AuthenticationException',

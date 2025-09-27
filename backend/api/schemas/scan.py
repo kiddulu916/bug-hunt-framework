@@ -4,11 +4,11 @@ Defines data validation and serialization models for scan-related API endpoints.
 """
 
 from typing import List, Optional, Dict, Any, Union
-from pydantic import BaseModel, Field, validator, root_validator
+from pydantic import BaseModel, Field, field_validator, model_validator
 from datetime import datetime, timedelta
 from enum import Enum
 
-from apps.scans.models import ScanStatus, ToolStatus
+from apps.scanning.models import ScanStatus, ToolStatus
 from core.constants import RECON_PHASES, TOOL_CONFIGS
 
 class ScanBase(BaseModel):
@@ -18,7 +18,8 @@ class ScanBase(BaseModel):
     scan_config: Dict[str, Any] = Field(default_factory=dict, description="Scan configuration parameters")
     methodology_phases: List[str] = Field(default_factory=lambda: RECON_PHASES, description="Methodology phases to execute")
 
-    @validator('methodology_phases')
+    @field_validator('methodology_phases')
+    @classmethod
     def validate_methodology_phases(cls, v):
         """Validate methodology phases against known phases."""
         if not v:
@@ -42,14 +43,16 @@ class ScanSessionCreate(ScanBase):
     scheduled_start: Optional[datetime] = Field(None, description="Scheduled start time")
     tools_config: Dict[str, Dict[str, Any]] = Field(default_factory=dict, description="Tool-specific configurations")
 
-    @validator('scheduled_start')
+    @field_validator('scheduled_start')
+    @classmethod
     def validate_scheduled_start(cls, v):
         """Ensure scheduled start is in the future."""
         if v is not None and v <= datetime.utcnow():
             raise ValueError('Scheduled start time must be in the future')
         return v
 
-    @root_validator
+    @model_validator(mode="after")
+    @classmethod
     def validate_tools_config(cls, values):
         """Validate tool configurations."""
         tools_config = values.get('tools_config', {})
@@ -102,7 +105,8 @@ class ScanSessionUpdate(BaseModel):
     scheduled_start: Optional[datetime] = None
     tools_config: Optional[Dict[str, Dict[str, Any]]] = None
 
-    @validator('methodology_phases')
+    @field_validator('methodology_phases')
+    @classmethod
     def validate_methodology_phases(cls, v):
         if v is not None:
             valid_phases = set(RECON_PHASES)
@@ -111,7 +115,8 @@ class ScanSessionUpdate(BaseModel):
                 raise ValueError(f'Invalid methodology phases: {", ".join(invalid_phases)}')
         return v
 
-    @validator('scheduled_start')
+    @field_validator('scheduled_start')
+    @classmethod
     def validate_scheduled_start(cls, v):
         if v is not None and v <= datetime.utcnow():
             raise ValueError('Scheduled start time must be in the future')
@@ -139,7 +144,8 @@ class ScanSessionResponse(ScanBase):
     created_at: datetime = Field(..., description="Creation timestamp")
     updated_at: datetime = Field(..., description="Last update timestamp")
 
-    @validator('total_progress')
+    @field_validator('total_progress')
+    @classmethod
     def validate_progress(cls, v):
         """Ensure progress is within valid range."""
         return max(0.0, min(100.0, v))
@@ -424,7 +430,8 @@ class ScanFilter(BaseModel):
     tools: Optional[List[str]] = Field(None, description="Filter by tools used")
     priority_range: Optional[List[int]] = Field(None, min_items=2, max_items=2, description="Priority range [min, max]")
 
-    @validator('priority_range')
+    @field_validator('priority_range')
+    @classmethod
     def validate_priority_range(cls, v):
         if v is not None:
             if len(v) != 2:
@@ -435,7 +442,8 @@ class ScanFilter(BaseModel):
                 raise ValueError('Priority values must be between 1 and 10')
         return v
 
-    @root_validator
+    @model_validator(mode="after")
+    @classmethod
     def validate_date_ranges(cls, values):
         """Validate date range consistency."""
         created_after = values.get('created_after')
@@ -497,7 +505,7 @@ class BulkScanOperation(BaseModel):
     """Schema for bulk operations on scan sessions."""
 
     scan_session_ids: List[str] = Field(..., min_items=1, description="List of scan session IDs")
-    operation: str = Field(..., regex=r'^(start|pause|resume|stop|delete|update_priority)', description="Operation to perform")
+    operation: str = Field(..., pattern=r'^(start|pause|resume|stop|delete|update_priority)', description="Operation to perform")
     parameters: Dict[str, Any] = Field(default_factory=dict, description="Operation-specific parameters")
 
     class Config:
@@ -563,7 +571,8 @@ class ScanSchedule(BaseModel):
     created_by: str = Field(..., description="Schedule creator")
     created_at: datetime = Field(default_factory=datetime.utcnow, description="Creation timestamp")
 
-    @validator('cron_expression')
+    @field_validator('cron_expression')
+    @classmethod
     def validate_cron_expression(cls, v):
         """Basic cron expression validation."""
         parts = v.split()
@@ -575,7 +584,7 @@ class ScanExport(BaseModel):
     """Schema for scan export data."""
 
     scan_sessions: List[ScanSessionResponse] = Field(..., description="Scan sessions to export")
-    export_format: str = Field(..., regex=r'^(csv|json|xml)', description="Export format")
+    export_format: str = Field(..., pattern=r'^(csv|json|xml)', description="Export format")
     include_results: bool = Field(False, description="Include detailed scan results")
     include_tool_outputs: bool = Field(False, description="Include tool output files")
     filters: Dict[str, Any] = Field(default_factory=dict, description="Applied filters")
@@ -642,4 +651,4 @@ class ScanQueryFilters(BaseModel):
     created_by: Optional[str] = Field(None, description="Filter by creator")
     search: Optional[str] = Field(None, description="Search in scan names")
     sort_by: str = Field("created_at", description="Sort field")
-    sort_order: str = Field("desc", regex=r'^(asc|desc)$', description="Sort order")
+    sort_order: str = Field("desc", pattern=r'^(asc|desc)$', description="Sort order")

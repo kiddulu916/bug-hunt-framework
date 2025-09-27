@@ -10,8 +10,8 @@ https://docs.djangoproject.com/en/4.2/howto/deployment/wsgi/
 import os
 from django.core.wsgi import get_wsgi_application
 
-# Set the default settings module
-os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'config.settings.production')
+# Set the default settings module (Docker-aware)
+os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'config.settings.development')
 
 # Get the WSGI application
 application = get_wsgi_application()

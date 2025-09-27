@@ -495,7 +495,7 @@ async def bulk_vulnerability_operations(
 
 @router.get("/export/{format}")
 async def export_vulnerabilities(
-    format: str = Path(..., regex="^(csv|json|xml|pdf)$", description="Export format"),
+    format: str = Path(..., pattern="^(csv|json|xml|pdf)$", description="Export format"),
     severity: Optional[str] = Query(None, description="Filter by severity"),
     verified_only: bool = Query(
         False, description="Export only verified vulnerabilities"

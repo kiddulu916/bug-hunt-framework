@@ -12,7 +12,7 @@ from typing import Callable, Dict, Any
 from fastapi import Request, Response, HTTPException, status
 from fastapi.responses import JSONResponse
 from starlette.middleware.base import BaseHTTPMiddleware
-from starlette.middleware.compression import CompressionMiddleware
+from starlette.middleware.gzip import GZipMiddleware
 import hashlib
 
 from core.cache import cache_manager
@@ -421,7 +421,7 @@ class RequestValidationMiddleware(BaseHTTPMiddleware):
 
 
 # Response compression with intelligent content-type handling
-class IntelligentCompressionMiddleware(CompressionMiddleware):
+class IntelligentCompressionMiddleware(GZipMiddleware):
     """
     Enhanced compression middleware with intelligent content-type detection.
     """

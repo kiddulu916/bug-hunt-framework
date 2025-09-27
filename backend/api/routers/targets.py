@@ -46,7 +46,7 @@ async def list_targets(
     is_active: Optional[bool] = Query(None, description="Filter by active status"),
     search: Optional[str] = Query(None, description="Search in target names and URLs"),
     sort_by: str = Query("created_at", description="Sort field"),
-    sort_order: str = Query("desc", regex="^(asc|desc)$", description="Sort order"),
+    sort_order: str = Query("desc", pattern="^(asc|desc)$", description="Sort order"),
     db: Session = Depends(get_db),
     current_user: dict = Depends(get_current_user)
 ):
@@ -270,7 +270,7 @@ async def delete_target(
             raise RecordNotFoundException("Target", target_id)
 
         # Check if target has associated scan sessions
-        from apps.scans.models import ScanSession
+        from apps.scanning.models import ScanSession
         scan_count = db.query(func.count(ScanSession.id)).filter(
             ScanSession.target_id == target_id
         ).scalar()
@@ -400,7 +400,7 @@ async def get_target_statistics(
         if not target:
             raise RecordNotFoundException("Target", target_id)
 
-        from apps.scans.models import ScanSession
+        from apps.scanning.models import ScanSession
         from apps.vulnerabilities.models import Vulnerability
         from apps.recon.models import ReconResult
 

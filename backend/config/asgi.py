@@ -14,8 +14,8 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
 
-# Set the default Django settings module
-os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'config.settings.production')
+# Set the default Django settings module (Docker-aware)
+os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'config.settings.development')
 
 # Get Django ASGI application early to ensure Django is set up
 django_asgi_app = get_asgi_application()
@@ -30,6 +30,20 @@ class ASGIApplication:
         self.fastapi_app = fastapi_app
 
     async def __call__(self, scope, receive, send):
+        # Docker health checks
+        if scope["type"] == "http" and scope["path"] == "/health":
+            response = {
+                'type': 'http.response.start',
+                'status': 200,
+                'headers': [[b'content-type', b'application/json']],
+            }
+            await send(response)
+            await send({
+                'type': 'http.response.body',
+                'body': b'{"status": "healthy", "service": "backend"}',
+            })
+            return
+
         # Route API requests to FastAPI
         if scope["type"] == "http" and scope["path"].startswith("/api/"):
             await self.fastapi_app(scope, receive, send)

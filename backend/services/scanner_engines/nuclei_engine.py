@@ -12,7 +12,7 @@ import os
 from typing import Dict, List, Any
 from dataclasses import dataclass
 
-from backend.services.vulnerability_scanner import VulnerabilityFinding, ScanEngineType, VulnSeverity
+from services.vulnerability_scanner import VulnerabilityFinding, ScanEngineType, VulnSeverity
 
 
 class NucleiEngine:

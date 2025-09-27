@@ -241,7 +241,7 @@ class ScanFastAPIPagination(FastAPIPagination):
         result = self.paginate_query(query)
 
         # Add status counts
-        from apps.scans.models import ScanSession, ScanStatus
+        from apps.scanning.models import ScanSession, ScanStatus
         status_counts = {}
 
         for status in ScanStatus:

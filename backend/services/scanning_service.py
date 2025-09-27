@@ -14,7 +14,7 @@ from datetime import datetime, timedelta
 from pathlib import Path
 import uuid
 
-from apps.scans.models import ScanSession, ScanStatus, ToolExecution, ToolStatus
+from apps.scanning.models import ScanSession, ScanStatus, ToolExecution, ToolStatus
 from apps.targets.models import Target
 from core.constants import (
     TOOL_CONFIGS, TOOL_TIMEOUTS, RECON_PHASES, 

@@ -20,7 +20,8 @@ class CallbackServerConfigSchema(BaseModel):
     ssl_key_path: Optional[str] = Field(None, description="Path to SSL private key")
     callback_retention_hours: int = Field(24, ge=1, le=168, description="Hours to retain callback data")
     
-    @validator('shell_port_range_end')
+    @field_validator('shell_port_range_end')
+    @classmethod
     def validate_port_range(cls, v, values):
         if 'shell_port_range_start' in values and v <= values['shell_port_range_start']:
             raise ValueError('shell_port_range_end must be greater than shell_port_range_start')
@@ -310,7 +311,8 @@ class CallbackExportSchema(BaseModel):
     include_evidence: bool = Field(True, description="Include evidence data")
     include_raw_data: bool = Field(False, description="Include raw request/response data")
     
-    @validator('export_format')
+    @field_validator('export_format')
+    @classmethod
     def validate_export_format(cls, v):
         if v.lower() not in ['json', 'csv', 'xml']:
             raise ValueError('export_format must be one of: json, csv, xml')

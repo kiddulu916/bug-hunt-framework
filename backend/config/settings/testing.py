@@ -140,7 +140,7 @@ HEALTH_CHECK = {
 INSTALLED_APPS = [app for app in INSTALLED_APPS if app not in [
     'django_extensions',
     'debug_toolbar',
-    'django_silk',
+    'silk',
 ]]
 
 # Remove development-specific middleware

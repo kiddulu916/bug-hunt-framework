@@ -12,7 +12,16 @@ from typing import Dict, List, Optional, Any
 from dataclasses import dataclass, asdict
 from datetime import datetime, timedelta
 from pathlib import Path
+from enum import Enum
 import uuid
+
+
+class ReportFormat(Enum):
+    """Supported report formats"""
+    HTML = "html"
+    PDF = "pdf"
+    MARKDOWN = "markdown"
+    JSON = "json"
 
 from .template_manager import TemplateManager
 from .evidence_collector import EvidenceCollector

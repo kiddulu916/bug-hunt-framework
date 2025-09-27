@@ -11,7 +11,7 @@ from urllib.parse import urlparse, parse_qs
 import aiohttp
 import re
 
-from backend.services.vulnerability_scanner import VulnerabilityFinding, ScanEngineType, VulnSeverity
+from services.vulnerability_scanner import VulnerabilityFinding, ScanEngineType, VulnSeverity
 
 
 class CustomAPIEngine:

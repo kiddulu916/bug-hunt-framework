@@ -17,11 +17,12 @@ from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import Session, relationship
 from sqlalchemy.dialects.postgresql import UUID
 
-from backend.models import (
-    Target, ScanSession, Vulnerability, Report, ReconResult,
-    VulnSeverity, ScanStatus, BugBountyPlatform, Base
-)
-from backend.core.database import get_db_session
+from apps.targets.models import Target
+from apps.scanning.models import ScanSession, ScanStatus
+from apps.vulnerabilities.models import Vulnerability, VulnSeverity
+from apps.reporting.models import Report
+from apps.reconnaissance.models import ReconResult
+from core.database import get_db_session, Base
 
 
 class NotificationType(Enum):
@@ -88,7 +89,7 @@ class Notification(Base):
     is_pinned = Column(Boolean, default=False)
     
     # Metadata and context
-    metadata = Column(JSON, default={})  # Additional data like vulnerability_id, scan_id, etc.
+    notification_data = Column(JSON, default={})  # Additional data like vulnerability_id, scan_id, etc.
     action_url = Column(String(500), nullable=True)  # Frontend route to relevant page
     
     # Grouping for similar notifications
@@ -141,7 +142,7 @@ class NotificationService:
     
     async def create_notification(self, user_id: str, title: str, message: str,
                                 notification_type: str, category: str = "system",
-                                metadata: Optional[Dict[str, Any]] = None,
+                                notification_data: Optional[Dict[str, Any]] = None,
                                 action_url: Optional[str] = None,
                                 group_key: Optional[str] = None,
                                 expires_in_minutes: Optional[int] = None) -> str:
@@ -214,7 +215,7 @@ class NotificationService:
             message=message,
             notification_type=NotificationType(notification_type),
             category=NotificationCategory(category),
-            metadata=metadata or {},
+            notification_data=notification_data or {},
             action_url=action_url,
             group_key=group_key,
             expires_at=expires_at
@@ -488,7 +489,7 @@ class NotificationService:
             message=f"Found {vulnerability.vulnerability_name} in {target.target_name}",
             notification_type="critical" if vulnerability.severity == VulnSeverity.CRITICAL else "warning",
             category="vulnerability",
-            metadata={
+            notification_data={
                 "vulnerability_id": str(vulnerability.id),
                 "severity": vulnerability.severity.value,
                 "vulnerability_type": vulnerability.vulnerability_type,
@@ -537,7 +538,7 @@ class NotificationService:
             message=config["message"],
             notification_type=config["type"],
             category="scan",
-            metadata={
+            notification_data={
                 "scan_session_id": str(scan_session.id),
                 "scan_event": event,
                 "target_name": target.target_name,
@@ -573,7 +574,7 @@ class NotificationService:
             message=message,
             notification_type=notification_type,
             category="exploitation",
-            metadata={
+            notification_data={
                 "vulnerability_id": str(vulnerability.id),
                 "exploitation_event": "success" if success else "failure",
                 "framework_used": framework_used,
@@ -610,7 +611,7 @@ class NotificationService:
             message=message,
             notification_type=notification_type,
             category="exploitation",
-            metadata={
+            notification_data={
                 "exploitation_event": "chain",
                 "chain_name": chain_name,
                 "successful_steps": successful_steps,
@@ -634,7 +635,7 @@ class NotificationService:
             message=f"Generated {report.report_type} report for {target.target_name}",
             notification_type="success",
             category="report",
-            metadata={
+            notification_data={
                 "report_id": str(report.id),
                 "report_type": report.report_type,
                 "target_name": target.target_name,
@@ -678,7 +679,7 @@ class NotificationService:
             message=f"Found {count} new {config['name']} for {target.target_name}",
             notification_type="info",
             category="scan",
-            metadata={
+            notification_data={
                 "scan_session_id": str(scan_session.id),
                 "discovery_type": discovery_type,
                 "discovery_count": count,
@@ -692,7 +693,7 @@ class NotificationService:
     @shared_task
     def send_notification_async(self, user_id: str, title: str, message: str,
                                notification_type: str, category: str = "system",
-                               metadata: dict = None, action_url: str = None):
+                               notification_data: dict = None, action_url: str = None):
         """Celery task for sending notifications asynchronously"""
         import asyncio
         loop = asyncio.new_event_loop()
@@ -705,7 +706,7 @@ class NotificationService:
                     message=message,
                     notification_type=notification_type,
                     category=category,
-                    metadata=metadata,
+                    notification_data=notification_data,
                     action_url=action_url
                 )
             )

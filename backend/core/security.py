@@ -9,21 +9,28 @@ import logging
 import secrets
 import hashlib
 import re
+from uuid import UUID
 from datetime import datetime, timedelta
 from typing import Optional, Dict, Any, List, Set, Tuple
+import bcrypt
+from cryptography.fernet import Fernet
 from jose import JWTError, jwt
 from fastapi import HTTPException, status, Depends, Request
 from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
 from django.conf import settings
-from passlib.context import CryptContext
-
 from core.cache import cache_manager
 from core.exceptions import BugBountyPlatformException
-
 logger = logging.getLogger(__name__)
 
 # Password context for hashing
-pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
+# Note: Using bcrypt directly for password hashing
+def hash_password(password: str) -> str:
+    """Hash a password using bcrypt."""
+    return bcrypt.hashpw(password.encode('utf-8'), bcrypt.gensalt()).decode('utf-8')
+
+def verify_password(password: str, hashed: str) -> bool:
+    """Verify a password against its hash."""
+    return bcrypt.checkpw(password.encode('utf-8'), hashed.encode('utf-8'))
 
 # JWT settings
 SECRET_KEY = getattr(settings, "SECRET_KEY", "fallback-secret-key")
@@ -176,7 +183,6 @@ class SecurityManager:
     """
 
     def __init__(self):
-        self.pwd_context = pwd_context
         self.secret_key = JWT_SECRET_KEY
         self.algorithm = ALGORITHM
         self.threat_detector = ThreatDetector()
@@ -303,14 +309,14 @@ class SecurityManager:
     def verify_password(self, plain_password: str, hashed_password: str) -> bool:
         """Verify a plaintext password against its hash."""
         try:
-            return self.pwd_context.verify(plain_password, hashed_password)
+            return verify_password(plain_password, hashed_password)
         except (ValueError, TypeError) as e:
             logger.error("Password verification error: %s", e)
             return False
 
     def get_password_hash(self, password: str) -> str:
         """Generate password hash."""
-        return self.pwd_context.hash(password)
+        return hash_password(password)
 
     def validate_password_strength(self, password: str) -> Dict[str, Any]:
         """
@@ -754,8 +760,6 @@ def decrypt_sensitive_data(encrypted_data: str, key: Optional[str] = None) -> st
     Returns:
         str: Decrypted data
     """
-    from cryptography.fernet import Fernet
-    import base64
 
     if key is None:
         key = hashlib.sha256(SECRET_KEY.encode()).digest()
@@ -767,8 +771,6 @@ def decrypt_sensitive_data(encrypted_data: str, key: Optional[str] = None) -> st
 
 
 # Input validation schemas
-
-
 class InputValidator:
     """
     Centralized input validation for the platform.
@@ -808,6 +810,14 @@ class InputValidator:
         pattern = r"^[a-zA-Z0-9]([a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?(\.[a-zA-Z0-9]([a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?)*$"
         return bool(re.match(pattern, domain))
 
+    @staticmethod
+    def validate_uuid(uuid: str) -> bool:
+        """Validate UUID format."""
+        try:
+            UUID(uuid)
+            return True
+        except ValueError:
+            return False
 
 # Export commonly used items
 __all__ = [

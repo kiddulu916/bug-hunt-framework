@@ -13,7 +13,7 @@ from apps.targets.models import Target, BugBountyPlatform
 from apps.scanning.models import ScanSession, ScanStatus, ToolExecution
 from apps.vulnerabilities.models import Vulnerability, VulnSeverity
 from apps.exploitation.models import ExploitationSession, ExploitResult
-from apps.reconnaissance.models import ReconSession
+from apps.reconnaissance.models import ReconResult
 from apps.reporting.models import Report
 
 from services.scanning_service import ScanningService

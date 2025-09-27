@@ -11,7 +11,7 @@ from pathlib import Path
 from services.scanner_engines.nuclei_engine import NucleiEngine
 from services.scanner_engines.custom_web_engine import CustomWebEngine
 from services.scanner_engines.custom_infra_engine import CustomInfrastructureEngine
-from services.scanner_engines.custome_api_engine import CustomAPIEngine
+from services.scanner_engines.custom_api_engine import CustomAPIEngine
 from services.scanner_engines.recon_engine import ReconEngine
 from services.scanner_engines.scan_orchestrator import ScanOrchestrator
 

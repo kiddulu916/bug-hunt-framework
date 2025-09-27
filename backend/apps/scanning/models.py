@@ -151,6 +151,7 @@ class ToolExecution(models.Model):
 
     # Results
     output_file_path = models.FilePathField(
+        path='/app/scan_results',
         max_length=500,
         blank=True,
         null=True,

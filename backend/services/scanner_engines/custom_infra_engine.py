@@ -16,7 +16,7 @@ import aiohttp
 import concurrent.futures
 from datetime import datetime, timedelta
 
-from backend.services.vulnerability_scanner import VulnerabilityFinding, ScanEngineType, VulnSeverity
+from services.vulnerability_scanner import VulnerabilityFinding, ScanEngineType, VulnSeverity
 
 
 class CustomInfraEngine:

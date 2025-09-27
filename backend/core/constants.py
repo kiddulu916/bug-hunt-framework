@@ -326,6 +326,23 @@ CACHE_TIMEOUTS = {
     'tool_status': 120,             # 2 minutes
 }
 
+# Tool paths for scanning tools
+TOOL_PATHS = {
+    'amass': '/usr/bin/amass',
+    'subfinder': '/usr/bin/subfinder',
+    'nuclei': '/usr/bin/nuclei',
+    'httpx': '/usr/bin/httpx',
+    'nmap': '/usr/bin/nmap',
+    'masscan': '/usr/bin/masscan',
+    'sqlmap': '/usr/bin/sqlmap',
+    'nikto': '/usr/bin/nikto',
+    'gobuster': '/usr/bin/gobuster',
+    'ffuf': '/usr/bin/ffuf',
+    'dirsearch': '/usr/bin/dirsearch',
+    'burpsuite': '/opt/burpsuite/burpsuite',
+    'zaproxy': '/usr/bin/zaproxy',
+}
+
 # Default wordlists and dictionaries
 DEFAULT_WORDLISTS = {
     'subdomain': '/usr/share/wordlists/subdomains-top1million-5000.txt',
@@ -496,6 +513,7 @@ __all__ = [
     'ToolCategory',
     'TOOL_CONFIGS',
     'TOOL_TIMEOUTS',
+    'TOOL_PATHS',
     'HTTP_SUCCESS_CODES',
     'HTTP_REDIRECT_CODES',
     'HTTP_CLIENT_ERROR_CODES',

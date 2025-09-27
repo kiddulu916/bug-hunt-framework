@@ -33,25 +33,38 @@ User = get_user_model()
 @pytest.fixture(scope='session')
 def django_db_setup():
     """
-    Configure the test database setup
+    Configure the test database setup for Docker environment
     """
     from django.conf import settings
-    settings.DATABASES['default'] = {
-        'ENGINE': 'django.db.backends.sqlite3',
-        'NAME': ':memory:',
-        'OPTIONS': {
-            'timeout': 20,
+    # Use PostgreSQL in Docker, fallback to SQLite for local testing
+    if os.getenv('DJANGO_SETTINGS_MODULE') == 'config.settings.testing' and os.getenv('DATABASE_URL'):
+        # Keep existing PostgreSQL settings from testing.py
+        pass
+    else:
+        # Fallback to in-memory SQLite for local testing
+        settings.DATABASES['default'] = {
+            'ENGINE': 'django.db.backends.sqlite3',
+            'NAME': ':memory:',
+            'OPTIONS': {
+                'timeout': 20,
+            }
         }
-    }
 
 
 @pytest.fixture(scope='session')
 def temp_media_root():
     """
-    Create temporary media directory for tests
+    Create temporary media directory for tests (Docker-compatible paths)
     """
-    with tempfile.TemporaryDirectory() as temp_dir:
+    if os.getenv('DOCKER_MODE'):
+        # Use Docker-compatible paths
+        temp_dir = '/tmp/test_media'
+        os.makedirs(temp_dir, exist_ok=True)
         yield temp_dir
+    else:
+        # Use local temporary directory
+        with tempfile.TemporaryDirectory() as temp_dir:
+            yield temp_dir
 
 
 @pytest.fixture
@@ -217,13 +230,49 @@ def mock_celery_task():
 @pytest.fixture
 def mock_tool_execution():
     """
-    Mock external tool execution
+    Mock external tool execution (Docker-aware)
     """
     with patch('subprocess.run') as mock_run:
         mock_run.return_value.returncode = 0
         mock_run.return_value.stdout = 'Mock tool output'
         mock_run.return_value.stderr = ''
         yield mock_run
+
+
+@pytest.fixture
+def docker_tools_available():
+    """
+    Check if tools container is available for testing
+    """
+    if os.getenv('TOOLS_CONTAINER_NAME'):
+        return True
+    return False
+
+
+@pytest.fixture
+def mock_docker_exec():
+    """
+    Mock Docker container execution for tool tests
+    """
+    with patch('docker.from_env') as mock_docker:
+        mock_container = Mock()
+        mock_container.exec_run.return_value = (0, b'Mock Docker tool output')
+        mock_docker.return_value.containers.get.return_value = mock_container
+        yield mock_docker
+
+
+@pytest.fixture
+def redis_available():
+    """
+    Check if Redis is available for caching tests
+    """
+    try:
+        import redis
+        r = redis.from_url(os.getenv('REDIS_URL', 'redis://redis:6379/1'))
+        r.ping()
+        return True
+    except:
+        return False
 
 
 @pytest.fixture
