@@ -34,6 +34,8 @@ celery==5.3.4
 django-celery-beat==2.5.0
 django-celery-results==2.5.1
 flower==2.0.1
+vine>=5.1.0,<6.0
+tzdata
 
 # Redis
 redis==5.0.1

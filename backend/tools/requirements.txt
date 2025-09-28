@@ -140,6 +140,7 @@ shortuuid==1.0.11
 
 # Cryptography
 cryptography==41.0.7
+cffi
 
 # Time utilities
 arrow==1.3.0
