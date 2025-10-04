@@ -12,6 +12,10 @@
 
 # testing
 /coverage
+/tests
+/e2e
+jest.*
+/__tests__
 
 # next.js
 /.next/

@@ -24,6 +24,7 @@ import { TargetCreationWizard } from './TargetCreationWizard';
 import { TargetEditModal } from './TargetEditModal';
 import { TargetDeleteConfirmation } from './TargetDeleteConfirmation';
 import { useTargets, useCreateTarget, useDeleteTarget } from '@/hooks/api/useTargets';
+import { RoleGuard, AdminOnly } from '@/components/auth';
 import { cn } from '@/lib/utils';
 import { toast } from 'sonner';
 
@@ -181,13 +182,15 @@ export function TargetsList() {
             {pagination.count ? `${pagination.count} target${pagination.count !== 1 ? 's' : ''}` : 'Manage bug bounty targets'}
           </p>
         </div>
-        <button
-          onClick={() => setShowWizard(true)}
-          className="flex items-center px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors"
-        >
-          <Plus className="w-4 h-4 mr-2" />
-          Add Target
-        </button>
+        <RoleGuard roles={['admin', 'analyst']}>
+          <button
+            onClick={() => setShowWizard(true)}
+            className="flex items-center px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors"
+          >
+            <Plus className="w-4 h-4 mr-2" />
+            Add Target
+          </button>
+        </RoleGuard>
       </div>
 
       {/* Filters */}
@@ -291,24 +294,28 @@ export function TargetsList() {
                     {/* Dropdown menu */}
                     <div className="absolute right-0 mt-2 w-48 bg-gray-800 border border-gray-700 rounded-lg shadow-lg opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-200 z-10">
                       <div className="py-1">
-                        <button
-                          onClick={() => setEditingTarget(target)}
-                          className="flex items-center w-full px-4 py-2 text-sm text-gray-300 hover:bg-gray-700 hover:text-white"
-                        >
-                          <Edit className="w-4 h-4 mr-3" />
-                          Edit Target
-                        </button>
+                        <RoleGuard roles={['admin', 'analyst']}>
+                          <button
+                            onClick={() => setEditingTarget(target)}
+                            className="flex items-center w-full px-4 py-2 text-sm text-gray-300 hover:bg-gray-700 hover:text-white"
+                          >
+                            <Edit className="w-4 h-4 mr-3" />
+                            Edit Target
+                          </button>
+                        </RoleGuard>
                         <button className="flex items-center w-full px-4 py-2 text-sm text-gray-300 hover:bg-gray-700 hover:text-white">
                           <ExternalLink className="w-4 h-4 mr-3" />
                           View Details
                         </button>
-                        <button
-                          onClick={() => setDeletingTarget(target)}
-                          className="flex items-center w-full px-4 py-2 text-sm text-red-400 hover:bg-gray-700 hover:text-red-300"
-                        >
-                          <Trash2 className="w-4 h-4 mr-3" />
-                          Delete
-                        </button>
+                        <AdminOnly>
+                          <button
+                            onClick={() => setDeletingTarget(target)}
+                            className="flex items-center w-full px-4 py-2 text-sm text-red-400 hover:bg-gray-700 hover:text-red-300"
+                          >
+                            <Trash2 className="w-4 h-4 mr-3" />
+                            Delete
+                          </button>
+                        </AdminOnly>
                       </div>
                     </div>
                   </div>

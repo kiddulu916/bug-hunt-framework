@@ -6,6 +6,7 @@ import {
   Target,
   Settings2,
   BarChart3,
+  FileText,
   ChevronLeft,
   ChevronRight,
   Bug
@@ -37,6 +38,12 @@ const navigationItems = [
     label: 'Results',
     icon: BarChart3,
     description: 'Scan Results & Vulnerabilities'
+  },
+  {
+    id: 'reports',
+    label: 'Reports',
+    icon: FileText,
+    description: 'Security Reports & Export'
   }
 ];
 

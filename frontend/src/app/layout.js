@@ -1,5 +1,9 @@
 import { Geist, Geist_Mono } from "next/font/google";
 import { Toaster } from "sonner";
+import { RealtimeProvider } from "@/components/providers/RealtimeProvider";
+import { AuthProvider } from "@/contexts/AuthContext";
+import { ThemeProvider } from "@/contexts/ThemeContext";
+import ErrorBoundary from "@/components/common/ErrorBoundary";
 import "./globals.css";
 
 const geistSans = Geist({
@@ -23,12 +27,24 @@ export default function RootLayout({ children }) {
       <body
         className={`${geistSans.variable} ${geistMono.variable} antialiased pl-4`}
       >
-        {children}
+        <ErrorBoundary>
+          <ThemeProvider>
+            <AuthProvider>
+              <RealtimeProvider>
+                {children}
+              </RealtimeProvider>
+            </AuthProvider>
+          </ThemeProvider>
+        </ErrorBoundary>
         <Toaster
           position="top-right"
           theme="dark"
           richColors
           closeButton
+          duration={4000}
+          toastOptions={{
+            className: 'border border-gray-700 bg-gray-800/90 backdrop-blur-sm',
+          }}
         />
       </body>
     </html>

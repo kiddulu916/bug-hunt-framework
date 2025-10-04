@@ -3,13 +3,30 @@
 import { MainLayout } from '@/components/layout/MainLayout';
 import { TargetsList } from '@/components/targets/TargetsList';
 import { FrameworkPage } from '@/components/framework';
+import { ResultsPage } from '@/components/results';
+import { ReportsPage } from '@/components/reports';
+import { ActiveScansPanel } from '@/components/scans';
+import { ProtectedRoute } from '@/components/auth';
 import { useLayoutStore } from '@/store/layout';
 import { useState, useMemo } from 'react';
 import { TrendingUp, TrendingDown, Activity, Coffee, DollarSign } from 'lucide-react';
+import { useLiveMetrics } from '@/hooks/useLiveMetrics';
+import { useLiveScans } from '@/hooks/useLiveScans';
 
 // Temporary dashboard content
 function DashboardContent() {
   const [timePeriod, setTimePeriod] = useState('week');
+
+  // Live metrics from WebSocket
+  const metrics = useLiveMetrics({
+    targetsScanned: 23,
+    vulnerabilitiesFound: 47,
+    criticalVulns: 12,
+    scanTimeSaved: 18.6,
+  });
+
+  // Live scans from WebSocket
+  const scans = useLiveScans([]);
 
   // Static chart data to prevent hydration mismatch
   const chartData = useMemo(() => [
@@ -25,6 +42,11 @@ function DashboardContent() {
 
   return (
     <div className="space-y-6">
+      {/* Active Scans Panel */}
+      {scans.length > 0 && (
+        <ActiveScansPanel scans={scans} />
+      )}
+
       {/* Metric Cards */}
       <div className="grid grid-cols-1 md:grid-cols-3 mb-3 gap-4">
         {/* Targets Scanned */}
@@ -32,7 +54,7 @@ function DashboardContent() {
           <div className="flex items-start justify-between mb-2">
             <div>
               <p className="text-gray-400 text-xs uppercase tracking-wide mb-2">Targets Scanned</p>
-              <p className="text-5xl font-bold text-white mb-1">23</p>
+              <p className="text-5xl font-bold text-white mb-1">{metrics.targetsScanned}</p>
               <p className="text-gray-500 text-sm uppercase tracking-wide">This Week</p>
             </div>
             <div className="text-green-500">
@@ -50,7 +72,7 @@ function DashboardContent() {
           <div className="flex items-start justify-between mb-2">
             <div>
               <p className="text-gray-400 text-xs uppercase tracking-wide mb-2">Vulnerabilities Found</p>
-              <p className="text-5xl font-bold text-white mb-1">47</p>
+              <p className="text-5xl font-bold text-white mb-1">{metrics.vulnerabilitiesFound}</p>
               <p className="text-orange-500 text-sm uppercase tracking-wide">Critical & High Severity</p>
             </div>
             <div className="text-orange-500">
@@ -71,7 +93,7 @@ function DashboardContent() {
             <div>
               <p className="text-gray-400 text-xs uppercase tracking-wide mb-2">Scan Time Saved</p>
               <div className="flex items-baseline gap-2">
-                <p className="text-5xl font-bold text-white">18.6H</p>
+                <p className="text-5xl font-bold text-white">{metrics.scanTimeSaved}H</p>
                 <span className="text-blue-500 text-sm px-2 py-1 bg-blue-500/10 rounded">vs MANUAL</span>
               </div>
               <p className="text-blue-500 text-sm uppercase tracking-wide mt-1">Automated Testing</p>
@@ -192,12 +214,11 @@ function FrameworkContent() {
 }
 
 function ResultsContent() {
-  return (
-    <div className="text-white">
-      <h2 className="text-2xl font-bold mb-4">Scan Results</h2>
-      <p className="text-gray-400">Vulnerability findings and exploitation results will be displayed here.</p>
-    </div>
-  );
+  return <ResultsPage />;
+}
+
+function ReportsContent() {
+  return <ReportsPage />;
 }
 
 export default function Home() {
@@ -213,14 +234,18 @@ export default function Home() {
         return <FrameworkContent />;
       case 'results':
         return <ResultsContent />;
+      case 'reports':
+        return <ReportsContent />;
       default:
         return <DashboardContent />;
     }
   };
 
   return (
-    <MainLayout>
-      {renderContent()}
-    </MainLayout>
+    <ProtectedRoute>
+      <MainLayout>
+        {renderContent()}
+      </MainLayout>
+    </ProtectedRoute>
   );
 }

@@ -134,6 +134,19 @@ export const api = {
       const response = await apiClient.get('/auth/me');
       return response.data;
     },
+
+    updateProfile: async (userData) => {
+      const response = await apiClient.put('/auth/profile', userData);
+      return response.data;
+    },
+
+    changePassword: async (currentPassword, newPassword) => {
+      const response = await apiClient.post('/auth/change-password', {
+        current_password: currentPassword,
+        new_password: newPassword,
+      });
+      return response.data;
+    },
   },
 
   // Targets

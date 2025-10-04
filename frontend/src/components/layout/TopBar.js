@@ -11,6 +11,11 @@ import {
 } from 'lucide-react';
 import { useLayoutStore } from '@/store/layout';
 import { cn } from '@/lib/utils';
+import { NotificationButton } from '@/components/notifications';
+import { useWebSocket } from '@/hooks/useWebSocket';
+import { useAuth } from '@/contexts/AuthContext';
+import { useLogout } from '@/hooks/api/useAuth';
+import { toast } from 'sonner';
 
 export function TopBar() {
   const {
@@ -21,7 +26,19 @@ export function TopBar() {
     expandAll
   } = useLayoutStore();
 
+  const { isConnected } = useWebSocket();
+  const { user } = useAuth();
+  const logoutMutation = useLogout();
   const allCollapsed = leftSidebarCollapsed && rightSidebarCollapsed;
+
+  const handleLogout = async () => {
+    try {
+      await logoutMutation.mutateAsync();
+      toast.success('Logged out successfully');
+    } catch (error) {
+      toast.error('Logout failed');
+    }
+  };
 
   const getSectionTitle = () => {
     switch (activeSection) {
@@ -33,6 +50,8 @@ export function TopBar() {
         return 'Automation Framework';
       case 'results':
         return 'Scan Results';
+      case 'reports':
+        return 'Security Reports';
       default:
         return 'Bug Hunt Framework';
     }
@@ -62,10 +81,17 @@ export function TopBar() {
       {/* Right section */}
       <div className="flex items-center space-x-3 pr-12">
 
-      {/* Last updated - positioned at bottom */}
-      <div className="absolute bottom-1 left-52 text-xs text-gray-775 bg-gray-600 p-4 rounded">
-        Last updated 12:05
+      {/* Connection status - positioned at bottom */}
+      <div className="absolute bottom-1 left-52 text-xs bg-gray-600 p-4 rounded flex items-center gap-2">
+        <div className={`w-2 h-2 rounded-full ${isConnected ? 'bg-green-500 animate-pulse' : 'bg-gray-500'}`} />
+        <span className={isConnected ? 'text-green-400' : 'text-gray-400'}>
+          {isConnected ? 'Live Updates Active' : 'Connecting...'}
+        </span>
       </div>
+
+        {/* Notifications */}
+        <NotificationButton />
+
         {/* Sidebar toggle */}
         <button
           onClick={allCollapsed ? expandAll : collapseAll}
@@ -82,8 +108,12 @@ export function TopBar() {
         {/* User menu */}
         <div className="flex justify-center space-x-2">
           <div className="text-center p-2">
-            <div className="text-lg text-white font-medium">Researcher</div>
-            <div className="text-xs text-gray-400">Active Session</div>
+            <div className="text-lg text-white font-medium">
+              {user ? `${user.first_name || ''} ${user.last_name || ''}`.trim() || user.email : 'Researcher'}
+            </div>
+            <div className="text-xs text-gray-400">
+              {user?.role ? user.role.charAt(0).toUpperCase() + user.role.slice(1) : 'Active Session'}
+            </div>
           </div>
 
           <div className="relative group">
@@ -92,22 +122,30 @@ export function TopBar() {
             </button>
 
             {/* Dropdown menu */}
-            <div className="absolute right-1 mt-2 w-32 bg-gray-600 border border-gray-700 rounded-lg shadow-lg opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-200 z-50">
+            <div className="absolute right-1 mt-2 w-40 bg-gray-600 border border-gray-700 rounded-lg shadow-lg opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-200 z-50">
               <div className="py-1">
                 <a
-                  href="#"
+                  href="/profile"
                   className="flex items-center px-4 py-2 text-sm text-gray-300 opacity-50 hover:opacity-90 hover:bg-gray-500 hover:text-white"
                 >
-                  <Settings className="w-4 h-4 pr-3 pl-6" />
-                  Settings
+                  <User className="w-4 h-4 mr-2" />
+                  Profile
                 </a>
                 <a
-                  href="#"
+                  href="/settings"
                   className="flex items-center px-4 py-2 text-sm text-gray-300 opacity-50 hover:opacity-90 hover:bg-gray-500 hover:text-white"
                 >
-                  <LogOut className="w-4 h-4 pr-3 pl-6" />
-                  Sign Out
+                  <Settings className="w-4 h-4 mr-2" />
+                  Settings
                 </a>
+                <button
+                  onClick={handleLogout}
+                  disabled={logoutMutation.isPending}
+                  className="w-full flex items-center px-4 py-2 text-sm text-gray-300 opacity-50 hover:opacity-90 hover:bg-gray-500 hover:text-white disabled:opacity-25"
+                >
+                  <LogOut className="w-4 h-4 mr-2" />
+                  {logoutMutation.isPending ? 'Signing out...' : 'Sign Out'}
+                </button>
               </div>
             </div>
           </div>
