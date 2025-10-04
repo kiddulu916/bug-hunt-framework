@@ -6,20 +6,15 @@ This file contains settings common to all environments.
 import os
 from pathlib import Path
 from datetime import timedelta
-import environ
+from environ import Env
 
 # Build paths inside the project
 BASE_DIR = Path(__file__).resolve().parent.parent.parent
-
 # Environment variables
-env = environ.Env(
-    DEBUG=(bool, False),
-    SECRET_KEY=(str, 'change-me-in-production'),
-    ALLOWED_HOSTS=(list, []),
-)
+env = Env()
 
 # Read environment file if it exists
-environ.Env.read_env(BASE_DIR / '.env')
+env.read_env(BASE_DIR / '.env')
 
 # SECURITY WARNING: keep the secret key used in production secret!
 SECRET_KEY = env('SECRET_KEY')
@@ -103,11 +98,11 @@ ASGI_APPLICATION = 'config.asgi.application'
 DATABASES = {
     'default': {
         'ENGINE': 'django.db.backends.postgresql',
-        'NAME': env('POSTGRES_DB', default='bugbounty_platform'),
-        'USER': env('POSTGRES_USER', default='bugbounty_user'),
-        'PASSWORD': env('POSTGRES_PASSWORD', default='password'),
-        'HOST': env('POSTGRES_HOST', default='localhost'),
-        'PORT': env('POSTGRES_PORT', default='5432'),
+        'NAME': env('DB_NAME'),
+        'USER': env('DB_USER'),
+        'PASSWORD': env('DB_PASSWORD'),
+        'HOST': env('DB_HOST'),
+        'PORT': env('DB_PORT'),
         'OPTIONS': {
             'options': '-c default_transaction_isolation=serializable'
         },
@@ -115,21 +110,33 @@ DATABASES = {
 }
 
 # SQLAlchemy configuration for FastAPI
-DATABASE_URL = env('DATABASE_URL', default='postgresql://bugbounty_user:password@localhost:5432/bugbounty_platform')
+DATABASE_URL = env('DB_URL')
 
 # Password validation
 AUTH_PASSWORD_VALIDATORS = [
     {
-        'NAME': 'django.contrib.auth.password_validation.UserAttributeSimilarityValidator',
+        'NAME': (
+            'django.contrib.auth.password_validation.'
+            'UserAttributeSimilarityValidator'
+        ),
     },
     {
-        'NAME': 'django.contrib.auth.password_validation.MinimumLengthValidator',
+        'NAME': (
+            'django.contrib.auth.password_validation.'
+            'MinimumLengthValidator'
+        ),
     },
     {
-        'NAME': 'django.contrib.auth.password_validation.CommonPasswordValidator',
+        'NAME': (
+            'django.contrib.auth.password_validation.'
+            'CommonPasswordValidator'
+        ),
     },
     {
-        'NAME': 'django.contrib.auth.password_validation.NumericPasswordValidator',
+        'NAME': (
+            'django.contrib.auth.password_validation.'
+            'NumericPasswordValidator'
+        ),
     },
 ]
 
@@ -190,8 +197,8 @@ CORS_ALLOWED_ORIGINS = env('CORS_ALLOWED_ORIGINS', default=[])
 CORS_ALLOW_CREDENTIALS = True
 
 # Celery Configuration
-CELERY_BROKER_URL = env('REDIS_URL', default='redis://localhost:6379/0')
-CELERY_RESULT_BACKEND = env('REDIS_URL', default='redis://localhost:6379/0')
+CELERY_BROKER_URL = env('REDIS_URL')
+CELERY_RESULT_BACKEND = env('REDIS_URL')
 CELERY_ACCEPT_CONTENT = ['json']
 CELERY_TASK_SERIALIZER = 'json'
 CELERY_RESULT_SERIALIZER = 'json'
@@ -205,7 +212,7 @@ CELERY_TASK_TIME_LIMIT = 7200  # 2 hours
 CACHES = {
     'default': {
         'BACKEND': 'django_redis.cache.RedisCache',
-        'LOCATION': env('REDIS_URL', default='redis://localhost:6379/1'),
+        'LOCATION': env('REDIS_URL'),
         'OPTIONS': {
             'CLIENT_CLASS': 'django_redis.client.DefaultClient',
         }

@@ -20,6 +20,8 @@ RUN apt-get update && apt-get install -y \
     libffi-dev \
     python3-dev \
     pkg-config \
+    libmagic1 \
+    libmagic-dev \
     procps \
     && rm -rf /var/lib/apt/lists/*
 
@@ -31,13 +33,13 @@ COPY requirements.txt /app/requirements.txt
 RUN pip install --no-cache-dir --upgrade pip
 RUN pip install --no-cache-dir -r requirements.txt
 
-# Copy Celery Beat configuration files
-COPY celery-beat.py /app/celery-beat.py
-COPY beat-entrypoint.sh /app/beat-entrypoint.sh
-COPY beat-scheduler.py /app/beat-scheduler.py
-
 # Copy application code
-COPY ../ /app/
+COPY . /app/
+
+# Copy Celery Beat configuration files (overwrite if needed)
+COPY celery-beat/celery-beat.py /app/celery-beat.py
+COPY celery-beat/beat-entrypoint.sh /app/beat-entrypoint.sh
+COPY celery-beat/beat-scheduler.py /app/beat-scheduler.py
 
 # Create necessary directories
 RUN mkdir -p /app/logs /app/celerybeat-schedule

@@ -10,7 +10,7 @@ from pathlib import Path
 
 from services.scanner_engines.nuclei_engine import NucleiEngine
 from services.scanner_engines.custom_web_engine import CustomWebEngine
-from services.scanner_engines.custom_infra_engine import CustomInfrastructureEngine
+from services.scanner_engines.custom_infra_engine import CustomInfraEngine
 from services.scanner_engines.custom_api_engine import CustomAPIEngine
 from services.scanner_engines.recon_engine import ReconEngine
 from services.scanner_engines.scan_orchestrator import ScanOrchestrator
@@ -232,13 +232,13 @@ class TestCustomWebEngine:
 
 
 @pytest.mark.django_db
-class TestCustomInfrastructureEngine:
+class TestCustomInfraEngine:
     """Test custom infrastructure scanner engine"""
 
     def setUp(self):
         self.target = TargetFactory()
         self.scan_session = ScanSessionFactory(target=self.target)
-        self.infra_engine = CustomInfrastructureEngine()
+        self.infra_engine = CustomInfraEngine()
 
     @patch('subprocess.run')
     def test_nmap_port_scan(self, mock_subprocess):
@@ -509,7 +509,7 @@ class TestScanOrchestrator:
         'services.scanner_engines',
         NucleiEngine=Mock(),
         CustomWebEngine=Mock(),
-        CustomInfrastructureEngine=Mock()
+        CustomInfraEngine=Mock()
     )
     def test_coordinated_scan_execution(self):
         """Test coordinated execution of multiple scan engines"""

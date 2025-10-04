@@ -17,8 +17,8 @@ from services.scanning_service import ScanningService
 from services.scanner_engines.nuclei_engine import NucleiEngine
 from services.scanner_engines.recon_engine import ReconEngine
 from core.exceptions import (
-    ScanningError, ToolExecutionError, ConfigurationError,
-    ResourceNotFoundError, RateLimitExceededError
+    ScanningException, ToolExecutionException, InvalidScanConfigurationException,
+    RecordNotFoundException, RateLimitException
 )
 from tests.factories import (
     ScanSessionFactory, TargetFactory, UserFactory,
@@ -143,7 +143,7 @@ class TestScanningServiceScanManagement(TestCase):
             # )
             # self.assertIsNotNone(result)
             pass
-        except (ValidationError, ConfigurationError):
+        except (ValidationError, InvalidScanConfigurationException):
             # This is acceptable if service validates config
             pass
 
@@ -164,7 +164,7 @@ class TestScanningServiceScanManagement(TestCase):
         """Test retrieving non-existent scan session."""
         mock_scan_objects.get.side_effect = ScanSession.DoesNotExist
 
-        with self.assertRaises((ScanSession.DoesNotExist, ResourceNotFoundError)):
+        with self.assertRaises((ScanSession.DoesNotExist, RecordNotFoundException)):
             # self.scanning_service.get_scan_session("non-existent-id")
             pass
 
@@ -263,7 +263,7 @@ class TestScanningServiceToolExecution(TestCase):
             "timeout": 1  # Very short timeout
         }
 
-        with self.assertRaises((subprocess.TimeoutExpired, ToolExecutionError)):
+        with self.assertRaises((subprocess.TimeoutExpired, ToolExecutionException)):
             # self.scanning_service.execute_tool(
             #     scan_session=self.scan_session,
             #     tool_config=tool_config
@@ -280,7 +280,7 @@ class TestScanningServiceToolExecution(TestCase):
         ]
 
         for config in invalid_configs:
-            with self.assertRaises((ValidationError, ConfigurationError, ValueError)):
+            with self.assertRaises((ValidationError, InvalidScanConfigurationException, ValueError)):
                 # self.scanning_service.execute_tool(
                 #     scan_session=self.scan_session,
                 #     tool_config=config
@@ -359,7 +359,7 @@ class TestScanningServiceScanExecution(TestCase):
         self.scan_session.status = ScanStatus.RUNNING
         mock_scan_objects.get.return_value = self.scan_session
 
-        with self.assertRaises((ScanningError, ValueError)):
+        with self.assertRaises((ScanningException, ValueError)):
             # self.scanning_service.run_scan(self.scan_session.id)
             pass
 
@@ -369,7 +369,7 @@ class TestScanningServiceScanExecution(TestCase):
         self.scan_session.status = ScanStatus.CANCELLED
         mock_scan_objects.get.return_value = self.scan_session
 
-        with self.assertRaises((ScanningError, ValueError)):
+        with self.assertRaises((ScanningException, ValueError)):
             # self.scanning_service.run_scan(self.scan_session.id)
             pass
 
@@ -378,7 +378,7 @@ class TestScanningServiceScanExecution(TestCase):
     def test_run_scan_tool_failure(self, mock_scan_objects, mock_execute_tool):
         """Test scan execution with tool failure."""
         mock_scan_objects.get.return_value = self.scan_session
-        mock_execute_tool.side_effect = ToolExecutionError("Tool failed")
+        mock_execute_tool.side_effect = ToolExecutionException("Tool failed")
 
         # result = self.scanning_service.run_scan(self.scan_session.id)
 
@@ -401,7 +401,7 @@ class TestScanningServiceScanExecution(TestCase):
         self.scan_session.status = ScanStatus.QUEUED
         mock_scan_objects.get.return_value = self.scan_session
 
-        with self.assertRaises((ScanningError, ValueError)):
+        with self.assertRaises((ScanningException, ValueError)):
             # self.scanning_service.pause_scan(self.scan_session.id)
             pass
 
@@ -552,7 +552,7 @@ class TestScanningServiceConcurrency(TestCase):
         }
 
         # Should raise error if max concurrent limit reached
-        with self.assertRaises((RateLimitExceededError, ScanningError)):
+        with self.assertRaises((RateLimitException, ScanningException)):
             # self.scanning_service.create_scan_session(
             #     target=self.target,
             #     initiated_by=self.user,
@@ -582,7 +582,7 @@ class TestScanningServiceConcurrency(TestCase):
             # )
             # self.assertIsNotNone(result)
             pass
-        except (ScanningError, ValueError):
+        except (ScanningException, ValueError):
             # This is acceptable if service prevents concurrent scans on same target
             pass
 
@@ -603,7 +603,7 @@ class TestScanningServiceErrorHandling(TestCase):
             mock_get.side_effect = ConnectionError("Network unreachable")
 
             # Service should handle network errors gracefully
-            with self.assertRaises((ConnectionError, ScanningError)):
+            with self.assertRaises((ConnectionError, ScanningException)):
                 # self.scanning_service.validate_target_connectivity(self.target)
                 pass
 
@@ -617,7 +617,7 @@ class TestScanningServiceErrorHandling(TestCase):
                 "command": "nmap -sS example.com"
             }
 
-            with self.assertRaises((OSError, ToolExecutionError)):
+            with self.assertRaises((OSError, ToolExecutionException)):
                 # self.scanning_service.execute_tool(
                 #     scan_session=Mock(),
                 #     tool_config=tool_config
@@ -634,7 +634,7 @@ class TestScanningServiceErrorHandling(TestCase):
                 "command": "nmap -sS example.com"
             }
 
-            with self.assertRaises((PermissionError, ToolExecutionError)):
+            with self.assertRaises((PermissionError, ToolExecutionException)):
                 # self.scanning_service.execute_tool(
                 #     scan_session=Mock(),
                 #     tool_config=tool_config

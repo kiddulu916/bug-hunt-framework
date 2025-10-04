@@ -47,11 +47,11 @@ SILKY_META = True
 DATABASES = {
     'default': {
         'ENGINE': 'django.db.backends.postgresql',
-        'NAME': env('POSTGRES_DB', default='bugbounty_platform'),
-        'USER': env('POSTGRES_USER', default='bugbounty_user'),
-        'PASSWORD': env('POSTGRES_PASSWORD', default='password'),
-        'HOST': env('POSTGRES_HOST', default='localhost'),
-        'PORT': env('POSTGRES_PORT', default='5432'),
+        'NAME': env('DB_NAME'),
+        'USER': env('DB_USER'),
+        'PASSWORD': env('DB_PASSWORD'),
+        'HOST': env('DB_HOST'),
+        'PORT': env('DB_PORT'),
         'OPTIONS': {
             'sslmode': 'disable',  # Explicitly disable SSL for development
         },

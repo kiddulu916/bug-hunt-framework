@@ -20,6 +20,8 @@ RUN apt-get update && apt-get install -y \
     libffi-dev \
     python3-dev \
     pkg-config \
+    libmagic1 \
+    libmagic-dev \
     # Network tools for scanning tasks
     dnsutils \
     net-tools \
@@ -39,13 +41,13 @@ COPY requirements.txt /app/requirements.txt
 RUN pip install --no-cache-dir --upgrade pip
 RUN pip install --no-cache-dir -r requirements.txt
 
-# Copy Celery configuration files
-COPY celery-worker.py /app/celery-worker.py
-COPY worker-entrypoint.sh /app/worker-entrypoint.sh
-COPY celery-config.py /app/celery-config.py
-
 # Copy application code
-COPY ../ /app/
+COPY . /app/
+
+# Copy Celery configuration files (overwrite if needed)
+COPY celery/celery-worker.py /app/celery-worker.py
+COPY celery/worker-entrypoint.sh /app/worker-entrypoint.sh
+COPY celery/celery-config.py /app/celery-config.py
 
 # Create necessary directories
 RUN mkdir -p /app/logs /app/evidence /app/reports /app/scan_results /app/temp

@@ -8,9 +8,9 @@ services:
     env_file:
       - .env
     environment:
-      POSTGRES_DB: ${POSTGRES_DB}
-      POSTGRES_USER: ${POSTGRES_USER}
-      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+      POSTGRES_DB: ${DB_NAME}
+      POSTGRES_USER: ${DB_USER}
+      POSTGRES_PASSWORD: ${DB_PASSWORD}
       PGDATA: /var/lib/postgresql/data/pgdata
     volumes:
       - postgres_data:/var/lib/postgresql/data
@@ -20,7 +20,7 @@ services:
     networks:
       - bugbounty_network
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER} -d ${POSTGRES_DB}"]
+      test: ["CMD-SHELL", "pg_isready -U ${DB_USER} -d ${DB_NAME}"]
       interval: 30s
       timeout: 10s
       retries: 3
@@ -59,7 +59,6 @@ services:
     environment:
       - PGSSLMODE=disable
     volumes:
-      - ./backend:/app/
       - ./backend/logs:/app/logs
       - ./backend/media:/app/media
       - ./backend/static:/app/static
@@ -76,13 +75,6 @@ services:
         condition: service_healthy
       redis:
         condition: service_healthy
-    command: >
-      sh -c "
-        python manage.py migrate &&
-        python manage.py collectstatic --noinput &&
-        gunicorn config.wsgi:application --bind 0.0.0.0:8001 --workers 4 --timeout 300 &
-        uvicorn config.asgi:application --host 0.0.0.0 --port 8000 --workers 4 --loop uvloop --http httptools
-      "
     healthcheck:
       test: ["CMD", "curl", "-f", "http://localhost:8001/admin/"]
       interval: 60s
@@ -93,13 +85,12 @@ services:
   # Celery Worker for Background Tasks
   celery-worker:
     build:
-      context: ./backend/celery
-      dockerfile: Dockerfile
+      context: ./backend
+      dockerfile: celery/Dockerfile
     container_name: bugbounty_celery_worker
     env_file:
       - .env
     volumes:
-      - ./backend:/app/
       - ./backend/logs:/app/logs
       - ./backend/evidence:/app/evidence
       - ./backend/reports:/app/reports
@@ -126,13 +117,12 @@ services:
   # Celery Beat Scheduler
   celery-beat:
     build:
-      context: ./backend/celery-beat
-      dockerfile: Dockerfile
+      context: ./backend
+      dockerfile: celery-beat/Dockerfile
     container_name: bugbounty_celery_beat
     env_file:
       - .env
     volumes:
-      - ./backend:/app/
       - ./backend/logs:/app/logs
       - ./backend/celery_beat_data:/app/celerybeat-schedule
     networks:
@@ -150,8 +140,8 @@ services:
   # Flower - Celery Monitoring
   flower:
     build:
-      context: ./backend/flower
-      dockerfile: Dockerfile
+      context: ./backend
+      dockerfile: flower/Dockerfile
     container_name: bugbounty_flower
     env_file:
       - .env
@@ -170,13 +160,12 @@ services:
   # Security Tools Container
   tools:
     build:
-      context: ./backend/tools
-      dockerfile: Dockerfile
+      context: ./backend
+      dockerfile: tools/Dockerfile
     container_name: bugbounty_tools
     env_file:
       - .env
     volumes:
-      - ./backend:/app/
       - ./backend/evidence:/app/evidence
       - ./backend/scan_results:/app/scan_results
       - ./backend/tools/tools_data:/opt/tools
@@ -198,6 +187,27 @@ services:
       start_period: 120s
     command: tail -f /dev/null
 
+  # Next.js Frontend Service
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+    container_name: bugbounty_frontend
+    env_file:
+      - .env
+    ports:
+      - "3001:3001"
+    networks:
+      - bugbounty_network
+    depends_on:
+      - backend
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:3000"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 30s
+
   # Nginx Reverse Proxy
   nginx:
     image: nginx:alpine
@@ -208,12 +218,13 @@ services:
       - ./static:/var/www/static:ro
       - ./media:/var/www/media:ro
     ports:
-      - "80:80"
-      - "443:443"
+      - "8080:80"
+      - "8443:443"
     networks:
       - bugbounty_network
     depends_on:
       - backend
+      - frontend
     healthcheck:
       test: ["CMD", "curl", "-f", "http://localhost/health"]
       interval: 30s

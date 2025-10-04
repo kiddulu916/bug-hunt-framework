@@ -25,6 +25,8 @@ RUN apt-get update && apt-get install -y \
     ca-certificates \
     pkg-config \
     libpcap-dev \
+    libmagic1 \
+    libmagic-dev \
     # Programming languages
     golang-go \
     nodejs \
@@ -65,7 +67,7 @@ RUN pip install --no-cache-dir --upgrade pip && \
     pip install --no-cache-dir -r /app/requirements.txt
 
 # Copy tool installation script
-COPY install_tools.sh /install_tools.sh
+COPY tools/install_tools.sh /install_tools.sh
 RUN chmod +x /install_tools.sh
 
 # Install essential penetration testing tools (skip complex wordlist downloads for now)

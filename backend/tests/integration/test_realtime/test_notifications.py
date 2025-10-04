@@ -6,7 +6,7 @@ import pytest
 import asyncio
 import json
 from unittest.mock import Mock, patch, AsyncMock
-from django.test import TransactionTestCase
+from django.test import TransactionTestCase, TestCase
 from channels.testing import WebsocketCommunicator
 from channels.db import database_sync_to_async
 

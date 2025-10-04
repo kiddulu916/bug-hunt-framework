@@ -74,6 +74,11 @@ DEFAULT_FILE_STORAGE = 'django.core.files.storage.FileSystemStorage'
 MEDIA_ROOT = tempfile.mkdtemp()
 STATIC_ROOT = tempfile.mkdtemp()
 
+# Set testing paths for reports and templates
+import os
+os.environ['REPORTS_DIR'] = tempfile.mkdtemp()
+os.environ['TEMPLATES_DIR'] = tempfile.mkdtemp()
+
 # Celery configuration for testing
 CELERY_TASK_ALWAYS_EAGER = True
 CELERY_TASK_EAGER_PROPAGATES = True

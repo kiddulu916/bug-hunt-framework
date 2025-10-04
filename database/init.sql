@@ -1,11 +1,11 @@
 -- Database initialization script for Bug Bounty Automation Platform
 
 -- Create database if it doesn't exist
-SELECT 'CREATE DATABASE bugbounty_platform'
-WHERE NOT EXISTS (SELECT FROM pg_database WHERE datname = 'bugbounty_platform')\gexec
+SELECT 'CREATE DATABASE bug_hunt_db'
+WHERE NOT EXISTS (SELECT FROM pg_database WHERE datname = 'bug_hunt_db')\gexec
 
 -- Connect to the database
-\c bugbounty_platform;
+\c bug_hunt_db;
 
 -- Create extensions
 CREATE EXTENSION IF NOT EXISTS "uuid-ossp";
@@ -91,16 +91,16 @@ END;
 $$ language 'plpgsql';
 
 -- Grant permissions
-GRANT ALL PRIVILEGES ON DATABASE bugbounty_platform TO bugbounty_user;
-GRANT ALL ON SCHEMA public TO bugbounty_user;
-GRANT ALL PRIVILEGES ON ALL TABLES IN SCHEMA public TO bugbounty_user;
-GRANT ALL PRIVILEGES ON ALL SEQUENCES IN SCHEMA public TO bugbounty_user;
-GRANT ALL PRIVILEGES ON ALL FUNCTIONS IN SCHEMA public TO bugbounty_user;
+GRANT ALL PRIVILEGES ON DATABASE bug_hunt_db TO postgres;
+GRANT ALL ON SCHEMA public TO postgres;
+GRANT ALL PRIVILEGES ON ALL TABLES IN SCHEMA public TO postgres;
+GRANT ALL PRIVILEGES ON ALL SEQUENCES IN SCHEMA public TO postgres;
+GRANT ALL PRIVILEGES ON ALL FUNCTIONS IN SCHEMA public TO postgres;
 
 -- Set default privileges for future objects
-ALTER DEFAULT PRIVILEGES IN SCHEMA public GRANT ALL ON TABLES TO bugbounty_user;
-ALTER DEFAULT PRIVILEGES IN SCHEMA public GRANT ALL ON SEQUENCES TO bugbounty_user;
-ALTER DEFAULT PRIVILEGES IN SCHEMA public GRANT ALL ON FUNCTIONS TO bugbounty_user;
+ALTER DEFAULT PRIVILEGES IN SCHEMA public GRANT ALL ON TABLES TO postgres;
+ALTER DEFAULT PRIVILEGES IN SCHEMA public GRANT ALL ON SEQUENCES TO postgres;
+ALTER DEFAULT PRIVILEGES IN SCHEMA public GRANT ALL ON FUNCTIONS TO postgres;
 
 -- Performance settings
 ALTER SYSTEM SET shared_preload_libraries = 'pg_stat_statements';

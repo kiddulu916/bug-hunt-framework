@@ -17,8 +17,8 @@ from core.constants import (
     CVSS_SCORE_RANGES, HTTP_SUCCESS_CODES, COMMON_PORTS
 )
 from core.exceptions import ValidationError, SecurityError
-from core.security import SecurityUtils
-from core.pagination import PaginationHelper
+from core.security import SecurityManager, ThreatDetector, InputValidator
+from core.pagination import CustomPageNumberPagination, FastAPIPagination
 from core.cache import CacheManager
 
 
@@ -239,12 +239,12 @@ class TestRegexPatterns(TestCase):
 
 
 @pytest.mark.unit
-class TestSecurityUtils(TestCase):
+class TestSecurityManager(TestCase):
     """Test security utility functions."""
 
     def setUp(self):
         """Set up test data."""
-        self.security_utils = SecurityUtils()
+        self.security_manager = SecurityManager()
 
     def test_sanitize_input_basic_xss(self):
         """Test basic XSS sanitization."""
@@ -257,7 +257,7 @@ class TestSecurityUtils(TestCase):
         ]
 
         for dangerous_input in dangerous_inputs:
-            # sanitized = self.security_utils.sanitize_input(dangerous_input)
+            # sanitized = self.security_manager.sanitize_input(dangerous_input)
             # self.assertNotIn("<script>", sanitized.lower())
             # self.assertNotIn("javascript:", sanitized.lower())
             # self.assertNotIn("onerror=", sanitized.lower())
@@ -273,7 +273,7 @@ class TestSecurityUtils(TestCase):
         ]
 
         for pattern in sql_patterns:
-            # sanitized = self.security_utils.sanitize_input(pattern)
+            # sanitized = self.security_manager.sanitize_input(pattern)
             # Should either escape or remove dangerous SQL patterns
             # self.assertNotEqual(sanitized, pattern)
             pass
@@ -285,7 +285,7 @@ class TestSecurityUtils(TestCase):
 
         # Should handle very long inputs appropriately
         try:
-            # result = self.security_utils.validate_input_length(long_input, max_length=1000)
+            # result = self.security_manager.validate_input_length(long_input, max_length=1000)
             # self.assertLessEqual(len(result), 1000)
             pass
         except ValidationError:
@@ -308,20 +308,20 @@ class TestSecurityUtils(TestCase):
         ]
 
         for safe_file in safe_files:
-            # result = self.security_utils.validate_file_upload(safe_file)
+            # result = self.security_manager.validate_file_upload(safe_file)
             # self.assertTrue(result)
             pass
 
         for dangerous_file in dangerous_files:
             with self.assertRaises((ValidationError, SecurityError)):
-                # self.security_utils.validate_file_upload(dangerous_file)
+                # self.security_manager.validate_file_upload(dangerous_file)
                 pass
 
     def test_generate_secure_token(self):
         """Test secure token generation."""
         # Should generate cryptographically secure tokens
-        # token1 = self.security_utils.generate_secure_token()
-        # token2 = self.security_utils.generate_secure_token()
+        # token1 = self.security_manager.generate_secure_token()
+        # token2 = self.security_manager.generate_secure_token()
 
         # self.assertNotEqual(token1, token2)
         # self.assertGreater(len(token1), 16)  # Minimum secure length
@@ -333,8 +333,8 @@ class TestSecurityUtils(TestCase):
         password = "secure_password_123"
 
         # Should use secure hashing algorithm
-        # hash1 = self.security_utils.hash_password(password)
-        # hash2 = self.security_utils.hash_password(password)
+        # hash1 = self.security_manager.hash_password(password)
+        # hash2 = self.security_manager.hash_password(password)
 
         # Hashes should be different due to salt
         # self.assertNotEqual(hash1, hash2)
@@ -345,9 +345,9 @@ class TestSecurityUtils(TestCase):
         """Test password hash verification."""
         password = "test_password_456"
 
-        # hash_value = self.security_utils.hash_password(password)
-        # self.assertTrue(self.security_utils.verify_password(password, hash_value))
-        # self.assertFalse(self.security_utils.verify_password("wrong_password", hash_value))
+        # hash_value = self.security_manager.hash_password(password)
+        # self.assertTrue(self.security_manager.verify_password(password, hash_value))
+        # self.assertFalse(self.security_manager.verify_password("wrong_password", hash_value))
         pass
 
     def test_rate_limiting_validation(self):
@@ -357,7 +357,7 @@ class TestSecurityUtils(TestCase):
         # Should enforce rate limits
         # for i in range(100):
         #     try:
-        #         result = self.security_utils.check_rate_limit(client_id, limit=50)
+        #         result = self.security_manager.check_rate_limit(client_id, limit=50)
         #         if i < 50:
         #             self.assertTrue(result)
         #         else:
@@ -381,7 +381,7 @@ class TestSecurityUtils(TestCase):
         for unicode_input in unicode_inputs:
             # Should handle unicode properly
             try:
-                # result = self.security_utils.validate_encoding(unicode_input)
+                # result = self.security_manager.validate_encoding(unicode_input)
                 # self.assertIsInstance(result, str)
                 pass
             except UnicodeError:
@@ -390,20 +390,20 @@ class TestSecurityUtils(TestCase):
     def test_csrf_token_validation(self):
         """Test CSRF token validation."""
         # Should generate and validate CSRF tokens
-        # token = self.security_utils.generate_csrf_token()
-        # self.assertTrue(self.security_utils.validate_csrf_token(token))
-        # self.assertFalse(self.security_utils.validate_csrf_token("invalid_token"))
-        # self.assertFalse(self.security_utils.validate_csrf_token(""))
+        # token = self.security_manager.generate_csrf_token()
+        # self.assertTrue(self.security_manager.validate_csrf_token(token))
+        # self.assertFalse(self.security_manager.validate_csrf_token("invalid_token"))
+        # self.assertFalse(self.security_manager.validate_csrf_token(""))
         pass
 
 
 @pytest.mark.unit
-class TestPaginationHelper(TestCase):
+class TestPagination(TestCase):
     """Test pagination utility functions."""
 
     def setUp(self):
         """Set up test data."""
-        self.pagination_helper = PaginationHelper()
+        self.paginator = CustomPageNumberPagination()
 
     def test_calculate_pagination_basic(self):
         """Test basic pagination calculation."""
@@ -411,7 +411,7 @@ class TestPaginationHelper(TestCase):
         # page_size = 10
         # current_page = 1
 
-        # result = self.pagination_helper.calculate_pagination(
+        # result = self.paginator.calculate_pagination(
         #     total_items, page_size, current_page
         # )
 
@@ -435,7 +435,7 @@ class TestPaginationHelper(TestCase):
 
         for total_items, page_size, current_page in edge_cases:
             try:
-                # result = self.pagination_helper.calculate_pagination(
+                # result = self.paginator.calculate_pagination(
                 #     total_items, page_size, current_page
                 # )
                 # self.assertIsInstance(result, dict)
@@ -450,7 +450,7 @@ class TestPaginationHelper(TestCase):
         # total_pages = 10
         # current_page = 5
 
-        # result = self.pagination_helper.generate_page_links(
+        # result = self.paginator.generate_page_links(
         #     base_url, total_pages, current_page
         # )
 
@@ -480,13 +480,13 @@ class TestPaginationHelper(TestCase):
         ]
 
         for params in valid_params:
-            # result = self.pagination_helper.validate_parameters(params)
+            # result = self.paginator.validate_parameters(params)
             # self.assertTrue(result)
             pass
 
         for params in invalid_params:
             with self.assertRaises((ValueError, ValidationError, TypeError)):
-                # self.pagination_helper.validate_parameters(params)
+                # self.paginator.validate_parameters(params)
                 pass
 
     def test_offset_calculation(self):
@@ -499,7 +499,7 @@ class TestPaginationHelper(TestCase):
         ]
 
         for page, page_size, expected_offset in test_cases:
-            # offset = self.pagination_helper.calculate_offset(page, page_size)
+            # offset = self.paginator.calculate_offset(page, page_size)
             # self.assertEqual(offset, expected_offset)
             pass
 

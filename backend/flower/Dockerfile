@@ -20,6 +20,8 @@ RUN apt-get update && apt-get install -y \
     libffi-dev \
     python3-dev \
     pkg-config \
+    libmagic1 \
+    libmagic-dev \
     && rm -rf /var/lib/apt/lists/*
 
 # Set working directory
@@ -36,13 +38,13 @@ RUN pip install --no-cache-dir \
     prometheus-client==0.19.0 \
     grafana-api==1.0.3
 
-# Copy Flower configuration files
-COPY flower-config.py /app/flower-config.py
-COPY flower-entrypoint.sh /app/flower-entrypoint.sh
-COPY flower-dashboard.py /app/flower-dashboard.py
-
 # Copy application code (for Django integration)
-COPY ../ /app/
+COPY . /app/
+
+# Copy Flower configuration files (overwrite if needed)
+COPY flower/flower-config.py /app/flower-config.py
+COPY flower/flower-entrypoint.sh /app/flower-entrypoint.sh
+COPY flower/flower-dashboard.py /app/flower-dashboard.py
 
 # Create necessary directories
 RUN mkdir -p /app/logs /app/flower-data

@@ -18,7 +18,7 @@ from apps.reporting.models import Report
 
 from services.scanning_service import ScanningService
 from services.exploitation_service import ExploitationService
-from services.recon_service import ReconnaienceService
+from services.recon_service import ReconService
 from services.reporting_service import ReportingService
 from services.notification_service import NotificationService
 

@@ -13,9 +13,9 @@ from apps.targets.models import Target, BugBountyPlatform
 from services.target_service import TargetService
 from core.exceptions import (
     ValidationError as CustomValidationError,
-    ResourceNotFoundError,
-    ServiceError,
-    ConnectivityError
+    RecordNotFoundException,
+    BugBountyPlatformException,
+    TargetException
 )
 from tests.factories import TargetFactory, UserFactory
 
@@ -284,7 +284,7 @@ class TestTargetServiceCRUDOperations(TestCase):
         """Test retrieving non-existent target."""
         mock_target_objects.get.side_effect = Target.DoesNotExist
 
-        with self.assertRaises((Target.DoesNotExist, ResourceNotFoundError)):
+        with self.assertRaises((Target.DoesNotExist, RecordNotFoundException)):
             # self.target_service.get_target("non-existent-id")
             pass
 
@@ -337,7 +337,7 @@ class TestTargetServiceCRUDOperations(TestCase):
         """Test deleting non-existent target."""
         mock_target_objects.get.side_effect = Target.DoesNotExist
 
-        with self.assertRaises((Target.DoesNotExist, ResourceNotFoundError)):
+        with self.assertRaises((Target.DoesNotExist, RecordNotFoundException)):
             # self.target_service.delete_target("non-existent-id")
             pass
 
@@ -575,7 +575,7 @@ class TestTargetServiceConfigurationManagement(TestCase):
 
 
 @pytest.mark.unit
-class TestTargetServiceErrorHandling(TestCase):
+class TestTargetBugBountyPlatformExceptionHandling(TestCase):
     """Test error handling in target service."""
 
     def setUp(self):
@@ -634,7 +634,7 @@ class TestTargetServiceErrorHandling(TestCase):
                 "created_by": self.user
             }
 
-            with self.assertRaises((IntegrityError, ServiceError)):
+            with self.assertRaises((IntegrityError, BugBountyPlatformException)):
                 # self.target_service.create_target(target_data)
                 pass
 
