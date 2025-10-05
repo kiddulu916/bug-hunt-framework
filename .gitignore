@@ -4,6 +4,14 @@ __pycache__/
 
 node_modules/
 dist/
-.venv
-.vscode
+/.venv/
+/.vscode/
 CLAUDE.md 
+/.benchmarks/
+/.claude/
+/.coverage/
+/coverage.xml
+/htmlcov/
+/tests/coverage.xml
+/tests/htmlcov/
+/tests/coverage.xml
