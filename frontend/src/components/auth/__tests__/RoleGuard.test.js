@@ -16,8 +16,9 @@ describe('RoleGuard', () => {
 
   it('should not render children when user is not authenticated', () => {
     useAuth.mockReturnValue({
-      isAuthenticated: false,
+      user: null,
       hasRole: jest.fn().mockReturnValue(false),
+      hasPermission: jest.fn().mockReturnValue(false),
     })
 
     render(
@@ -31,8 +32,9 @@ describe('RoleGuard', () => {
 
   it('should not render children when user lacks required role', () => {
     useAuth.mockReturnValue({
-      isAuthenticated: true,
+      user: { id: 1, email: 'test@example.com' },
       hasRole: jest.fn().mockReturnValue(false),
+      hasPermission: jest.fn().mockReturnValue(false),
     })
 
     render(
@@ -46,8 +48,9 @@ describe('RoleGuard', () => {
 
   it('should render children when user has required role', () => {
     useAuth.mockReturnValue({
-      isAuthenticated: true,
+      user: { id: 1, email: 'test@example.com' },
       hasRole: jest.fn().mockReturnValue(true),
+      hasPermission: jest.fn().mockReturnValue(false),
     })
 
     render(
@@ -62,8 +65,9 @@ describe('RoleGuard', () => {
   it('should render children when user has one of multiple required roles', () => {
     const hasRoleMock = jest.fn((role) => role === 'analyst')
     useAuth.mockReturnValue({
-      isAuthenticated: true,
+      user: { id: 1, email: 'test@example.com' },
       hasRole: hasRoleMock,
+      hasPermission: jest.fn().mockReturnValue(false),
     })
 
     render(
@@ -77,8 +81,9 @@ describe('RoleGuard', () => {
 
   it('should render fallback when provided and user lacks access', () => {
     useAuth.mockReturnValue({
-      isAuthenticated: true,
+      user: { id: 1, email: 'test@example.com' },
       hasRole: jest.fn().mockReturnValue(false),
+      hasPermission: jest.fn().mockReturnValue(false),
     })
 
     render(
@@ -102,8 +107,9 @@ describe('AdminOnly', () => {
   it('should only render for admin users', () => {
     const hasRoleMock = jest.fn((role) => role === 'admin')
     useAuth.mockReturnValue({
-      isAuthenticated: true,
+      user: { id: 1, email: 'test@example.com' },
       hasRole: hasRoleMock,
+      hasPermission: jest.fn().mockReturnValue(false),
     })
 
     render(
@@ -118,8 +124,9 @@ describe('AdminOnly', () => {
 
   it('should not render for non-admin users', () => {
     useAuth.mockReturnValue({
-      isAuthenticated: true,
+      user: { id: 1, email: 'test@example.com' },
       hasRole: jest.fn().mockReturnValue(false),
+      hasPermission: jest.fn().mockReturnValue(false),
     })
 
     render(

@@ -16,6 +16,9 @@
 /e2e
 jest.*
 /__tests__
+playwright.*
+playwright.config.js
+/e2e/
 
 # next.js
 /.next/

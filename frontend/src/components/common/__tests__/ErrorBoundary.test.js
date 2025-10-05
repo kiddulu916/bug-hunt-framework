@@ -1,5 +1,5 @@
 import { render, screen } from '@testing-library/react'
-import { ErrorBoundary } from '../ErrorBoundary'
+import ErrorBoundary from '../ErrorBoundary'
 
 describe('ErrorBoundary', () => {
   // Suppress console.error for these tests
@@ -43,12 +43,12 @@ describe('ErrorBoundary', () => {
       throw new Error('Test error')
     }
 
-    const CustomFallback = ({ error }) => (
+    const customFallback = (error) => (
       <div>Custom Error: {error.message}</div>
     )
 
     render(
-      <ErrorBoundary fallback={CustomFallback}>
+      <ErrorBoundary fallback={customFallback}>
         <ThrowError />
       </ErrorBoundary>
     )

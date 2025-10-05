@@ -5,16 +5,27 @@ import { cn } from '@/lib/utils';
 /**
  * Base Skeleton component for loading states
  */
-export function Skeleton({ className, ...props }) {
+export function Skeleton({ className, variant, width, height, ...props }) {
+  const variantClasses = {
+    circle: 'rounded-full',
+    text: 'h-4',
+    rectangular: 'rounded',
+  }
+
+  const style = {
+    animation: 'shimmer 2s ease-in-out infinite',
+    ...(width && { width }),
+    ...(height && { height }),
+  }
+
   return (
     <div
       className={cn(
-        'animate-pulse bg-gradient-to-r from-gray-800 via-gray-700 to-gray-800 bg-[length:200%_100%] rounded',
+        'animate-pulse bg-gradient-to-r from-gray-800 via-gray-700 to-gray-800 bg-[length:200%_100%]',
+        variant ? variantClasses[variant] : 'rounded',
         className
       )}
-      style={{
-        animation: 'shimmer 2s ease-in-out infinite',
-      }}
+      style={style}
       {...props}
     />
   );

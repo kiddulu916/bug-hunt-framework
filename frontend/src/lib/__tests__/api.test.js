@@ -1,13 +1,39 @@
-import axios from 'axios'
-import { api, tokenManager } from '../api'
+// Create mock axios instance
+const mockGet = jest.fn()
+const mockPost = jest.fn()
+const mockPut = jest.fn()
+const mockPatch = jest.fn()
+const mockDelete = jest.fn()
 
-// Mock axios
-jest.mock('axios')
+const mockAxiosInstance = {
+  get: mockGet,
+  post: mockPost,
+  put: mockPut,
+  patch: mockPatch,
+  delete: mockDelete,
+  interceptors: {
+    request: { use: jest.fn() },
+    response: { use: jest.fn() },
+  },
+}
+
+// Mock axios module
+jest.mock('axios', () => ({
+  __esModule: true,
+  default: {
+    create: jest.fn(() => mockAxiosInstance),
+    post: jest.fn(),
+  },
+  create: jest.fn(() => mockAxiosInstance),
+  post: jest.fn(),
+}))
+
+// Import after mocking
+const { api, tokenManager } = require('../api')
 
 describe('tokenManager', () => {
   beforeEach(() => {
     localStorage.clear()
-    jest.clearAllMocks()
   })
 
   describe('getAccessToken', () => {
@@ -35,22 +61,26 @@ describe('tokenManager', () => {
   describe('setTokens', () => {
     it('should set both access and refresh tokens', () => {
       tokenManager.setTokens('access-123', 'refresh-456')
-      expect(localStorage.setItem).toHaveBeenCalledWith('access_token', 'access-123')
-      expect(localStorage.setItem).toHaveBeenCalledWith('refresh_token', 'refresh-456')
+      expect(localStorage.getItem('access_token')).toBe('access-123')
+      expect(localStorage.getItem('refresh_token')).toBe('refresh-456')
     })
 
     it('should set only access token when refresh token is not provided', () => {
       tokenManager.setTokens('access-123')
-      expect(localStorage.setItem).toHaveBeenCalledWith('access_token', 'access-123')
-      expect(localStorage.setItem).toHaveBeenCalledTimes(1)
+      expect(localStorage.getItem('access_token')).toBe('access-123')
+      expect(localStorage.getItem('refresh_token')).toBeNull()
     })
   })
 
   describe('clearTokens', () => {
     it('should remove both tokens from localStorage', () => {
+      localStorage.setItem('access_token', 'test-token')
+      localStorage.setItem('refresh_token', 'refresh-token')
+
       tokenManager.clearTokens()
-      expect(localStorage.removeItem).toHaveBeenCalledWith('access_token')
-      expect(localStorage.removeItem).toHaveBeenCalledWith('refresh_token')
+
+      expect(localStorage.getItem('access_token')).toBeNull()
+      expect(localStorage.getItem('refresh_token')).toBeNull()
     })
   })
 })
@@ -71,21 +101,17 @@ describe('api.auth', () => {
         },
       }
 
-      axios.create.mockReturnValue({
-        post: jest.fn().mockResolvedValue(mockResponse),
-        interceptors: {
-          request: { use: jest.fn() },
-          response: { use: jest.fn() },
-        },
+      mockPost.mockResolvedValue(mockResponse)
+
+      const result = await api.auth.login('test@example.com', 'password')
+
+      expect(mockPost).toHaveBeenCalledWith('/auth/login', {
+        email: 'test@example.com',
+        password: 'password',
       })
-
-      // Re-import to get mocked axios instance
-      jest.resetModules()
-      const { api: newApi } = require('../api')
-
-      const result = await newApi.auth.login('test@example.com', 'password')
-
       expect(result).toEqual(mockResponse.data)
+      expect(localStorage.getItem('access_token')).toBe('access-token')
+      expect(localStorage.getItem('refresh_token')).toBe('refresh-token')
     })
   })
 
@@ -94,41 +120,25 @@ describe('api.auth', () => {
       localStorage.setItem('access_token', 'test-token')
       localStorage.setItem('refresh_token', 'refresh-token')
 
-      axios.create.mockReturnValue({
-        post: jest.fn().mockResolvedValue({}),
-        interceptors: {
-          request: { use: jest.fn() },
-          response: { use: jest.fn() },
-        },
-      })
+      mockPost.mockResolvedValue({})
 
-      jest.resetModules()
-      const { api: newApi } = require('../api')
+      await api.auth.logout()
 
-      await newApi.auth.logout()
-
-      expect(localStorage.removeItem).toHaveBeenCalledWith('access_token')
-      expect(localStorage.removeItem).toHaveBeenCalledWith('refresh_token')
+      expect(mockPost).toHaveBeenCalledWith('/auth/logout')
+      expect(localStorage.getItem('access_token')).toBeNull()
+      expect(localStorage.getItem('refresh_token')).toBeNull()
     })
 
     it('should clear tokens even if logout request fails', async () => {
       localStorage.setItem('access_token', 'test-token')
 
-      axios.create.mockReturnValue({
-        post: jest.fn().mockRejectedValue(new Error('Network error')),
-        interceptors: {
-          request: { use: jest.fn() },
-          response: { use: jest.fn() },
-        },
-      })
+      mockPost.mockRejectedValue(new Error('Network error'))
 
-      jest.resetModules()
-      const { api: newApi } = require('../api')
+      // Logout will throw the error but should still clear tokens in finally block
+      await expect(api.auth.logout()).rejects.toThrow('Network error')
 
-      await newApi.auth.logout()
-
-      expect(localStorage.removeItem).toHaveBeenCalledWith('access_token')
-      expect(localStorage.removeItem).toHaveBeenCalledWith('refresh_token')
+      expect(localStorage.getItem('access_token')).toBeNull()
+      expect(localStorage.getItem('refresh_token')).toBeNull()
     })
   })
 
@@ -148,19 +158,11 @@ describe('api.auth', () => {
         },
       }
 
-      axios.create.mockReturnValue({
-        post: jest.fn().mockResolvedValue(mockResponse),
-        interceptors: {
-          request: { use: jest.fn() },
-          response: { use: jest.fn() },
-        },
-      })
+      mockPost.mockResolvedValue(mockResponse)
 
-      jest.resetModules()
-      const { api: newApi } = require('../api')
+      const result = await api.auth.register(userData)
 
-      const result = await newApi.auth.register(userData)
-
+      expect(mockPost).toHaveBeenCalledWith('/auth/register', userData)
       expect(result).toEqual(mockResponse.data)
     })
   })
@@ -187,20 +189,12 @@ describe('api.targets', () => {
         },
       }
 
-      axios.create.mockReturnValue({
-        get: jest.fn().mockResolvedValue(mockResponse),
-        interceptors: {
-          request: { use: jest.fn() },
-          response: { use: jest.fn() },
-        },
-      })
-
-      jest.resetModules()
-      const { api: newApi } = require('../api')
+      mockGet.mockResolvedValue(mockResponse)
 
       const params = { page: 1, page_size: 20 }
-      const result = await newApi.targets.list(params)
+      const result = await api.targets.list(params)
 
+      expect(mockGet).toHaveBeenCalledWith('/targets/', { params })
       expect(result).toEqual(mockResponse.data)
     })
   })
@@ -220,19 +214,11 @@ describe('api.targets', () => {
         },
       }
 
-      axios.create.mockReturnValue({
-        post: jest.fn().mockResolvedValue(mockResponse),
-        interceptors: {
-          request: { use: jest.fn() },
-          response: { use: jest.fn() },
-        },
-      })
+      mockPost.mockResolvedValue(mockResponse)
 
-      jest.resetModules()
-      const { api: newApi } = require('../api')
+      const result = await api.targets.create(targetData)
 
-      const result = await newApi.targets.create(targetData)
-
+      expect(mockPost).toHaveBeenCalledWith('/targets/', targetData)
       expect(result).toEqual(mockResponse.data)
     })
   })
@@ -241,19 +227,11 @@ describe('api.targets', () => {
     it('should delete target by id', async () => {
       const mockResponse = { data: { success: true } }
 
-      axios.create.mockReturnValue({
-        delete: jest.fn().mockResolvedValue(mockResponse),
-        interceptors: {
-          request: { use: jest.fn() },
-          response: { use: jest.fn() },
-        },
-      })
+      mockDelete.mockResolvedValue(mockResponse)
 
-      jest.resetModules()
-      const { api: newApi } = require('../api')
+      const result = await api.targets.delete(1)
 
-      const result = await newApi.targets.delete(1)
-
+      expect(mockDelete).toHaveBeenCalledWith('/targets/1')
       expect(result).toEqual(mockResponse.data)
     })
   })
@@ -279,19 +257,11 @@ describe('api.scans', () => {
         },
       }
 
-      axios.create.mockReturnValue({
-        post: jest.fn().mockResolvedValue(mockResponse),
-        interceptors: {
-          request: { use: jest.fn() },
-          response: { use: jest.fn() },
-        },
-      })
+      mockPost.mockResolvedValue(mockResponse)
 
-      jest.resetModules()
-      const { api: newApi } = require('../api')
+      const result = await api.scans.create(scanData)
 
-      const result = await newApi.scans.create(scanData)
-
+      expect(mockPost).toHaveBeenCalledWith('/scans/', scanData)
       expect(result).toEqual(mockResponse.data)
     })
   })
@@ -305,19 +275,11 @@ describe('api.scans', () => {
         },
       }
 
-      axios.create.mockReturnValue({
-        post: jest.fn().mockResolvedValue(mockResponse),
-        interceptors: {
-          request: { use: jest.fn() },
-          response: { use: jest.fn() },
-        },
-      })
+      mockPost.mockResolvedValue(mockResponse)
 
-      jest.resetModules()
-      const { api: newApi } = require('../api')
+      const result = await api.scans.cancel(1)
 
-      const result = await newApi.scans.cancel(1)
-
+      expect(mockPost).toHaveBeenCalledWith('/scans/1/cancel')
       expect(result).toEqual(mockResponse.data)
     })
   })
@@ -337,19 +299,11 @@ describe('api.vulnerabilities', () => {
         },
       }
 
-      axios.create.mockReturnValue({
-        patch: jest.fn().mockResolvedValue(mockResponse),
-        interceptors: {
-          request: { use: jest.fn() },
-          response: { use: jest.fn() },
-        },
-      })
+      mockPatch.mockResolvedValue(mockResponse)
 
-      jest.resetModules()
-      const { api: newApi } = require('../api')
+      const result = await api.vulnerabilities.updateStatus(1, 'verified')
 
-      const result = await newApi.vulnerabilities.updateStatus(1, 'verified')
-
+      expect(mockPatch).toHaveBeenCalledWith('/vulnerabilities/1/status', { status: 'verified' })
       expect(result).toEqual(mockResponse.data)
     })
   })
@@ -369,19 +323,11 @@ describe('api.vulnerabilities', () => {
         },
       }
 
-      axios.create.mockReturnValue({
-        post: jest.fn().mockResolvedValue(mockResponse),
-        interceptors: {
-          request: { use: jest.fn() },
-          response: { use: jest.fn() },
-        },
-      })
+      mockPost.mockResolvedValue(mockResponse)
 
-      jest.resetModules()
-      const { api: newApi } = require('../api')
+      const result = await api.vulnerabilities.addEvidence(1, evidence)
 
-      const result = await newApi.vulnerabilities.addEvidence(1, evidence)
-
+      expect(mockPost).toHaveBeenCalledWith('/vulnerabilities/1/evidence', evidence)
       expect(result).toEqual(mockResponse.data)
     })
   })
